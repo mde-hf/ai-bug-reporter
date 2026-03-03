@@ -500,16 +500,16 @@ def get_epic_stats():
             platform_key = ' + '.join(sorted(platforms))
             stats['by_platform'][platform_key] += 1
             
-            # Creation trend (by week)
+            # Creation trend (by day)
             created = datetime.fromisoformat(fields['created'].replace('Z', '+00:00'))
-            week_key = created.strftime('%Y-W%U')
-            stats['creation_trend'][week_key] += 1
+            day_key = created.strftime('%Y-%m-%d')
+            stats['creation_trend'][day_key] += 1
             
             # Resolution trend
             if fields.get('resolutiondate'):
                 resolved = datetime.fromisoformat(fields['resolutiondate'].replace('Z', '+00:00'))
-                week_key = resolved.strftime('%Y-W%U')
-                stats['resolution_trend'][week_key] += 1
+                day_key = resolved.strftime('%Y-%m-%d')
+                stats['resolution_trend'][day_key] += 1
                 
                 # Calculate resolution time
                 resolution_days = (resolved - created).days

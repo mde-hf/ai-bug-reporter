@@ -711,7 +711,7 @@ function displayDashboard(stats) {
         </div>
         
         <div class="breakdown-section" style="margin-top: 2rem;">
-            <h3>📈 Bug Creation Trend</h3>
+            <h3>📈 Bug Creation Trend (Last 10 Days)</h3>
             <div class="chart-container">
                 <canvas id="creationTrendChart"></canvas>
             </div>
@@ -779,18 +779,22 @@ function renderCreationTrendChart(creationTrend) {
     
     const ctx = canvas.getContext('2d');
     
-    // Sort weeks chronologically and get last 12 weeks
-    const sortedWeeks = Object.keys(creationTrend).sort();
-    const last12Weeks = sortedWeeks.slice(-12);
+    // Generate last 10 days
+    const last10Days = [];
+    const today = new Date();
+    for (let i = 9; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        last10Days.push(date.toISOString().split('T')[0]); // Format: YYYY-MM-DD
+    }
     
-    // Format labels to be more readable (e.g., "Week 5" or "Jan W1")
-    const labels = last12Weeks.map(week => {
-        const [year, weekNum] = week.split('-W');
-        const weekDate = getDateOfWeek(parseInt(weekNum), parseInt(year));
-        return weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Format labels to be more readable (e.g., "Jan 15" or "Mon 15")
+    const labels = last10Days.map(dateStr => {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
     
-    const data = last12Weeks.map(week => creationTrend[week] || 0);
+    const data = last10Days.map(day => creationTrend[day] || 0);
     
     // Detect theme
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -879,16 +883,4 @@ function renderCreationTrendChart(creationTrend) {
             }
         }
     });
-}
-
-// Helper function to get the Monday of a given week number
-function getDateOfWeek(weekNum, year) {
-    const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
-    const dow = simple.getDay();
-    const ISOweekStart = simple;
-    if (dow <= 4)
-        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else
-        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-    return ISOweekStart;
 }
