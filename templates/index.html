@@ -140,15 +140,16 @@
             <div class="dashboard">
                 <div class="dashboard-header">
                     <h2>📊 Epic Dashboard</h2>
-                    <div class="form-group" style="margin-bottom: 1.5rem;">
-                        <label for="dashboardProject">Project</label>
-                        <select id="dashboardProject" name="dashboardProject">
+                    <div class="form-group">
+                        <label for="dashboardProject">Project <span class="required">*</span></label>
+                        <select id="dashboardProject" name="dashboardProject" required>
                             <option value="">-- Select a project --</option>
                             <option value="loyalty-mission">Loyalty Mission Squad</option>
                             <option value="virality">Virality Squad</option>
                             <option value="rewards">Rewards Squad</option>
                             <option value="loyalty-2.0">Loyalty 2.0 Bug Reporting</option>
                         </select>
+                        <div class="help-text">Select a project to view dashboard metrics</div>
                     </div>
                 </div>
                 

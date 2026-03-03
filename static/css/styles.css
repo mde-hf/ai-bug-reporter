@@ -1197,18 +1197,8 @@ footer a:hover {
 }
 
 .dashboard-header .form-group {
-    min-width: 250px;
-    margin-bottom: 0 !important;
-}
-
-.dashboard-header .form-group label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.dashboard-header select {
-    font-size: 0.95rem;
+    min-width: 300px;
+    max-width: 350px;
 }
 
 @media (max-width: 768px) {
@@ -1220,5 +1210,6 @@ footer a:hover {
     .dashboard-header .form-group {
         width: 100%;
         min-width: auto;
+        max-width: none;
     }
 }
