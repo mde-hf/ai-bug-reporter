@@ -840,7 +840,7 @@ function renderCreationTrendChart(creationTrend) {
     // Detect theme
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDark ? '#e2e8f0' : '#333333';
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1);
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     
     // HelloFresh brand colors
     const hfGreen = '#91C933';
