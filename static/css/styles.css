@@ -1235,3 +1235,129 @@ footer a:hover {
         padding: 1.5rem;
     }
 }
+
+/* Test Case Generator Styles */
+.ticket-card {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.ticket-card h4 {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-primary);
+}
+
+.ticket-meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--hf-green);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.test-cases-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.test-case-card {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--hf-green);
+    transition: all 0.3s ease;
+}
+
+.test-case-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.test-case-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.test-case-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.test-case-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.test-case-section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.test-case-section strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.test-case-section ol {
+    margin: 0.5rem 0 0 1.5rem;
+    padding: 0;
+}
+
+.test-case-section li {
+    margin: 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.test-case-section p {
+    margin: 0.5rem 0 0 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.test-cases-content {
+    margin-top: 1rem;
+}
+
+[data-theme="dark"] .ticket-card,
+[data-theme="dark"] .test-case-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .test-case-header {
+        flex-direction: column;
+    }
+    
+    .priority-badge {
+        align-self: flex-start;
+    }
+}

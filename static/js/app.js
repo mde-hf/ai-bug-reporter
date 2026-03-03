@@ -555,6 +555,9 @@ function switchTab(tabName) {
         
         // Dashboard will load based on project selection
         // No automatic loading here
+    } else if (tabName === 'testcase') {
+        document.getElementById('testcaseTab').classList.add('active');
+        document.querySelector('.tab-button:nth-child(3)').classList.add('active');
     }
 }
 
@@ -929,3 +932,136 @@ function renderCreationTrendChart(creationTrend) {
         }
     });
 }
+
+// Test Case Generator Functions
+async function generateTestCases() {
+    const ticketInput = document.getElementById('ticketLink').value.trim();
+    const resultDiv = document.getElementById('testCaseResult');
+    const button = document.querySelector('#testcaseTab .btn-primary');
+    
+    if (!ticketInput) {
+        alert('Please enter a JIRA ticket link or key');
+        return;
+    }
+    
+    // Show loading state
+    setButtonLoading(button, true);
+    resultDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch('/api/generate-test-cases', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ticket: ticketInput
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTestCases(data);
+            resultDiv.style.display = 'block';
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Error generating test cases:', error);
+        alert('Failed to generate test cases. Please try again.');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+function displayTestCases(data) {
+    const ticketInfoDiv = document.getElementById('ticketInfo');
+    const testCasesDiv = document.getElementById('testCasesContent');
+    
+    // Display ticket information
+    ticketInfoDiv.innerHTML = `
+        <div class="ticket-card">
+            <h4><a href="${data.ticket_url}" target="_blank" style="color: var(--hf-green);">${data.ticket_key}</a>: ${data.summary}</h4>
+            <div class="ticket-meta">
+                <span class="badge">${data.issue_type}</span>
+                <span class="badge">${data.status}</span>
+                <span class="badge">${data.priority}</span>
+            </div>
+            <p style="margin-top: 1rem; color: var(--text-secondary);">${data.description.substring(0, 200)}${data.description.length > 200 ? '...' : ''}</p>
+        </div>
+    `;
+    
+    // Display test cases
+    let testCasesHTML = '<div class="test-cases-list">';
+    
+    data.test_cases.forEach(tc => {
+        const priorityColor = tc.priority === 'Critical' ? '#dc2626' : 
+                            tc.priority === 'High' ? '#f59e0b' : '#10b981';
+        
+        testCasesHTML += `
+            <div class="test-case-card">
+                <div class="test-case-header">
+                    <h4>${tc.id}: ${tc.title}</h4>
+                    <span class="priority-badge" style="background: ${priorityColor};">${tc.priority}</span>
+                </div>
+                
+                <div class="test-case-section">
+                    <strong>📝 Test Steps:</strong>
+                    <ol>
+                        ${tc.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                </div>
+                
+                <div class="test-case-section">
+                    <strong>✅ Expected Result:</strong>
+                    <p>${tc.expected_result}</p>
+                </div>
+                
+                <div class="test-case-section">
+                    <strong>📊 Test Data:</strong>
+                    <p>${tc.test_data}</p>
+                </div>
+            </div>
+        `;
+    });
+    
+    testCasesHTML += '</div>';
+    testCasesDiv.innerHTML = testCasesHTML;
+    
+    // Store for copying
+    window.currentTestCases = data;
+}
+
+function copyTestCases() {
+    if (!window.currentTestCases) return;
+    
+    const data = window.currentTestCases;
+    let text = `Test Cases for ${data.ticket_key}: ${data.summary}\n`;
+    text += `Ticket URL: ${data.ticket_url}\n`;
+    text += `Issue Type: ${data.issue_type} | Status: ${data.status} | Priority: ${data.priority}\n`;
+    text += `\n${'='.repeat(80)}\n\n`;
+    
+    data.test_cases.forEach(tc => {
+        text += `${tc.id}: ${tc.title}\n`;
+        text += `Priority: ${tc.priority}\n\n`;
+        text += `Test Steps:\n`;
+        tc.steps.forEach((step, idx) => {
+            text += `  ${idx + 1}. ${step}\n`;
+        });
+        text += `\nExpected Result:\n  ${tc.expected_result}\n\n`;
+        text += `Test Data:\n  ${tc.test_data}\n`;
+        text += `\n${'-'.repeat(80)}\n\n`;
+    });
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Test cases copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+    });
+}
+
+// Make functions globally available
+window.generateTestCases = generateTestCases;
+window.copyTestCases = copyTestCases;

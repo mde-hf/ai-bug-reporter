@@ -26,6 +26,7 @@
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('report')">📝 Report Bug</button>
             <button class="tab-button" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab-button" onclick="switchTab('testcase')">🧪 Test Cases</button>
         </div>
 
         <div id="reportTab" class="tab-content active">
@@ -172,6 +173,38 @@
                     <div class="last-updated" id="lastUpdated"></div>
                 </div>
             </div>
+        </div>
+
+        <div id="testcaseTab" class="tab-content">
+            <main>
+                <h2 style="color: white; margin-bottom: 1.5rem;">🧪 Test Case Generator</h2>
+                <p style="color: rgba(255,255,255,0.9); margin-bottom: 2rem;">Generate critical path test cases from JIRA tickets</p>
+                
+                <div class="form-group">
+                    <label for="ticketLink">JIRA Ticket Link or Key</label>
+                    <input type="text" id="ticketLink" name="ticketLink" 
+                           placeholder="https://hellofresh.atlassian.net/browse/REW-123 or REW-123">
+                    <div class="help-text">Enter the JIRA ticket URL or just the ticket key (e.g., REW-123)</div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn btn-primary" onclick="generateTestCases()">
+                        <span class="btn-text">✨ Generate Test Cases</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </div>
+
+                <div id="testCaseResult" style="display: none; margin-top: 2rem;">
+                    <div class="result-section">
+                        <h3 style="color: white;">📋 Generated Test Cases</h3>
+                        <div id="ticketInfo" class="ticket-info"></div>
+                        <div id="testCasesContent" class="test-cases-content"></div>
+                        <button type="button" class="btn btn-secondary" onclick="copyTestCases()" style="margin-top: 1rem;">
+                            📋 Copy to Clipboard
+                        </button>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 

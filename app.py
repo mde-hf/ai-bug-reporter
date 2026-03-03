@@ -618,6 +618,174 @@ def health():
     """Health check endpoint."""
     return jsonify({'status': 'ok', 'epic': EPIC_KEY})
 
+@app.route('/api/generate-test-cases', methods=['POST'])
+def generate_test_cases():
+    """
+    Fetch JIRA ticket and generate test cases based on the ticket content.
+    """
+    try:
+        data = request.get_json()
+        ticket_input = data.get('ticket')
+        
+        if not ticket_input:
+            return jsonify({'error': 'Ticket link or key is required'}), 400
+        
+        # Extract ticket key from URL or use as-is
+        ticket_key = ticket_input.strip()
+        if 'atlassian.net/browse/' in ticket_key:
+            ticket_key = ticket_key.split('/browse/')[-1].split('?')[0]
+        
+        # Fetch ticket from JIRA
+        print(f"[INFO] Fetching ticket: {ticket_key}", flush=True)
+        
+        response = requests.get(
+            f'{JIRA_API_BASE}/rest/api/3/issue/{ticket_key}',
+            headers=get_jira_headers()
+        )
+        
+        if not response.ok:
+            return jsonify({'error': f'Failed to fetch ticket: {response.status_code}'}), 400
+        
+        issue = response.json()
+        
+        # Extract ticket information
+        summary = issue['fields']['summary']
+        description = issue['fields'].get('description', {})
+        issue_type = issue['fields']['issuetype']['name']
+        status = issue['fields']['status']['name']
+        priority = issue['fields'].get('priority', {}).get('name', 'None')
+        
+        # Extract description text
+        desc_text = extract_description_text(description)
+        
+        # Generate test cases based on ticket content
+        test_cases = generate_critical_path_tests(ticket_key, summary, desc_text, issue_type)
+        
+        return jsonify({
+            'success': True,
+            'ticket_key': ticket_key,
+            'ticket_url': f'{JIRA_BASE_URL}/browse/{ticket_key}',
+            'summary': summary,
+            'description': desc_text,
+            'issue_type': issue_type,
+            'status': status,
+            'priority': priority,
+            'test_cases': test_cases
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Test case generation failed: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+def extract_description_text(description):
+    """Extract plain text from JIRA description object."""
+    if not description:
+        return "No description provided"
+    
+    if isinstance(description, str):
+        return description
+    
+    # Handle Atlassian Document Format (ADF)
+    text_parts = []
+    
+    def extract_text(node):
+        if isinstance(node, dict):
+            if node.get('type') == 'text':
+                text_parts.append(node.get('text', ''))
+            if 'content' in node:
+                for child in node['content']:
+                    extract_text(child)
+        elif isinstance(node, list):
+            for item in node:
+                extract_text(item)
+    
+    extract_text(description)
+    return ' '.join(text_parts).strip() or "No description provided"
+
+def generate_critical_path_tests(ticket_key, summary, description, issue_type):
+    """
+    Generate critical path test cases based on ticket content.
+    Uses simple rule-based generation.
+    """
+    test_cases = []
+    
+    # Test Case 1: Verify the issue can be reproduced
+    test_cases.append({
+        'id': 'TC-01',
+        'title': f'Verify {issue_type}: {summary}',
+        'priority': 'High',
+        'steps': [
+            'Navigate to the affected page/feature',
+            'Perform the actions described in the bug report',
+            'Observe the behavior'
+        ],
+        'expected_result': 'Issue should be reproducible as described' if issue_type == 'Bug' else 'Feature should behave as specified',
+        'test_data': 'Use data mentioned in ticket description'
+    })
+    
+    # Test Case 2: Verify the fix/feature
+    test_cases.append({
+        'id': 'TC-02',
+        'title': f'Verify {issue_type} Resolution',
+        'priority': 'Critical',
+        'steps': [
+            'Apply the fix/changes',
+            'Navigate to the affected area',
+            'Perform the same actions as in TC-01',
+            'Verify the expected behavior'
+        ],
+        'expected_result': 'Issue should be resolved' if issue_type == 'Bug' else 'Feature should work as expected',
+        'test_data': 'Same test data as TC-01'
+    })
+    
+    # Test Case 3: Regression testing
+    test_cases.append({
+        'id': 'TC-03',
+        'title': 'Verify No Regression in Related Features',
+        'priority': 'High',
+        'steps': [
+            'Identify related features/components',
+            'Test each related feature',
+            'Verify no new issues introduced'
+        ],
+        'expected_result': 'All related features should continue to work normally',
+        'test_data': 'Standard test data for related features'
+    })
+    
+    # Test Case 4: Edge cases
+    test_cases.append({
+        'id': 'TC-04',
+        'title': 'Verify Edge Cases and Boundary Conditions',
+        'priority': 'Medium',
+        'steps': [
+            'Test with empty/null values',
+            'Test with maximum allowed values',
+            'Test with special characters',
+            'Test with different user roles/permissions'
+        ],
+        'expected_result': 'System should handle edge cases gracefully',
+        'test_data': 'Edge case test data'
+    })
+    
+    # Add environment-specific tests for bugs
+    if issue_type == 'Bug':
+        test_cases.append({
+            'id': 'TC-05',
+            'title': 'Verify Across All Environments',
+            'priority': 'High',
+            'steps': [
+                'Test fix in Development environment',
+                'Test fix in Staging environment',
+                'Test fix in Production environment'
+            ],
+            'expected_result': 'Fix should work consistently across all environments',
+            'test_data': 'Environment-specific test data'
+        })
+    
+    return test_cases
+
 if __name__ == '__main__':
     # Check for required environment variables
     if not JIRA_EMAIL or not JIRA_API_TOKEN:
