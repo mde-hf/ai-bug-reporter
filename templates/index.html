@@ -143,18 +143,31 @@
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label for="dashboardProject">Project</label>
                         <select id="dashboardProject" name="dashboardProject">
+                            <option value="">-- Select a project --</option>
                             <option value="loyalty-mission">Loyalty Mission Squad</option>
                             <option value="virality">Virality Squad</option>
                             <option value="rewards">Rewards Squad</option>
-                            <option value="loyalty-2.0" selected>Loyalty 2.0 Bug Reporting</option>
+                            <option value="loyalty-2.0">Loyalty 2.0 Bug Reporting</option>
                         </select>
                     </div>
                 </div>
-                <div id="dashboardContent" class="dashboard-loading">
-                    <div class="spinner"></div>
-                    <p>Loading statistics...</p>
+                
+                <div id="dashboardWipScreen" class="wip-screen" style="display: none;">
+                    <div class="wip-content">
+                        <div class="wip-icon">🚧</div>
+                        <h2>Work In Progress</h2>
+                        <p>Dashboard for <span id="dashboardWipProjectName"></span> is coming soon!</p>
+                        <p class="wip-subtitle">Please check back later or select Loyalty 2.0 Bug Reporting to view active dashboard.</p>
+                    </div>
                 </div>
-                <div class="last-updated" id="lastUpdated"></div>
+                
+                <div id="dashboardContentWrapper" style="display: none;">
+                    <div id="dashboardContent" class="dashboard-loading">
+                        <div class="spinner"></div>
+                        <p>Loading statistics...</p>
+                    </div>
+                    <div class="last-updated" id="lastUpdated"></div>
+                </div>
             </div>
         </div>
 

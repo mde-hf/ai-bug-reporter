@@ -42,13 +42,46 @@ squadSelect.addEventListener('change', function() {
     }
 });
 
-// Dashboard project selector (for future multi-project support)
+// Dashboard project selector
 const dashboardProject = document.getElementById('dashboardProject');
+const dashboardContentWrapper = document.getElementById('dashboardContentWrapper');
+const dashboardWipScreen = document.getElementById('dashboardWipScreen');
+
 if (dashboardProject) {
     dashboardProject.addEventListener('change', function() {
-        // Currently only Loyalty 2.0 is active, but dropdown is ready for future projects
-        // When other projects are ready, this will filter dashboard data by selected project
-        console.log('Dashboard project selected:', this.value);
+        const selectedProject = this.value;
+        
+        if (!selectedProject) {
+            // No selection - hide everything
+            dashboardContentWrapper.style.display = 'none';
+            dashboardWipScreen.style.display = 'none';
+            return;
+        }
+        
+        if (selectedProject === 'loyalty-2.0') {
+            // Show dashboard for Loyalty 2.0
+            dashboardWipScreen.style.display = 'none';
+            dashboardContentWrapper.style.display = 'block';
+            
+            // Load dashboard data if not already loaded
+            const lastUpdate = window.dashboardLastUpdate || 0;
+            const now = Date.now();
+            if (now - lastUpdate > 60000) { // Refresh if older than 1 minute
+                loadDashboardStats();
+            }
+        } else {
+            // Show WIP screen for other projects
+            dashboardContentWrapper.style.display = 'none';
+            dashboardWipScreen.style.display = 'block';
+            
+            // Set project name in WIP message
+            const projectNames = {
+                'loyalty-mission': 'Loyalty Mission Squad',
+                'virality': 'Virality Squad',
+                'rewards': 'Rewards Squad'
+            };
+            document.getElementById('dashboardWipProjectName').textContent = projectNames[selectedProject];
+        }
     });
 }
 
@@ -520,22 +553,17 @@ function switchTab(tabName) {
         document.getElementById('dashboardTab').classList.add('active');
         document.querySelector('.tab-button:nth-child(2)').classList.add('active');
         
-        // Load dashboard if not already loaded or if stale
-        const lastUpdate = window.dashboardLastUpdate || 0;
-        const now = Date.now();
-        if (now - lastUpdate > 60000) { // Refresh if older than 1 minute
-            loadDashboardStats();
-        }
+        // Dashboard will load based on project selection
+        // No automatic loading here
     }
 }
 
 // Make switchTab available globally
 window.switchTab = switchTab;
 
-// Load dashboard stats on page load (but don't show it)
-loadDashboardStats();
+// Don't auto-load dashboard on page load - wait for user selection
 
-// Auto-refresh dashboard every 15 minutes
+// Auto-refresh dashboard every 15 minutes (only when Loyalty 2.0 is selected)
 let dashboardRefreshInterval;
 
 function startDashboardAutoRefresh() {
@@ -546,8 +574,11 @@ function startDashboardAutoRefresh() {
     
     // Set up new interval (15 minutes = 900000ms)
     dashboardRefreshInterval = setInterval(() => {
-        console.log('Auto-refreshing dashboard...');
-        loadDashboardStats();
+        const selectedProject = document.getElementById('dashboardProject')?.value;
+        if (selectedProject === 'loyalty-2.0') {
+            console.log('Auto-refreshing dashboard...');
+            loadDashboardStats();
+        }
     }, 900000); // 15 minutes
 }
 
