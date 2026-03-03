@@ -550,6 +550,10 @@ header {
     background: linear-gradient(135deg, #7AB028 0%, #6A9D20 100%);
 }
 
+[data-theme="dark"] main {
+    background: linear-gradient(135deg, #7AB028 0%, #6A9D20 100%);
+}
+
 [data-theme="dark"] .stat-card,
 [data-theme="dark"] .breakdown-section {
     background: #1e293b;
@@ -633,10 +637,28 @@ h1 {
 }
 
 main {
-    background: var(--surface);
+    background: linear-gradient(135deg, #91C933 0%, #7AB028 100%);
     padding: 2.5rem;
     border-radius: 12px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 20px 60px rgba(145, 201, 51, 0.2);
+}
+
+/* Form styling on green background */
+main label {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+main .help-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+main .required {
+    color: #FFE5E5;
+}
+
+main h2 {
+    color: white;
 }
 
 .form-group {
