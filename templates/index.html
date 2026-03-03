@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bug Reporter - Simpler than JIRA</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <span class="icon" id="themeIcon">🌙</span>
+        <span id="themeText">Dark Mode</span>
+    </button>
+    
+    <div class="container">
+        <header>
+            <h1>🐛 AI Bug Reporter</h1>
+            <p class="subtitle">Report bugs easily - we'll check for duplicates automatically</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('report')">📝 Report Bug</button>
+            <button class="tab-button" onclick="switchTab('dashboard')">📊 Dashboard</button>
+        </div>
+
+        <div id="reportTab" class="tab-content active">
+            <main>
+            <form id="bugForm">
+                <div class="form-group">
+                    <label for="title">Bug Title <span class="required">*</span></label>
+                    <input type="text" id="title" name="title" required 
+                           placeholder="e.g., Login button doesn't work on mobile">
+                    <div class="help-text">Brief description of the issue</div>
+                </div>
+
+                <div id="duplicates" class="duplicates-section" style="display: none;">
+                    <h2>⚠️ Possible Duplicates Found</h2>
+                    <p class="duplicates-intro">We found similar bugs that might be related:</p>
+                    <div id="duplicatesList"></div>
+                    <div class="duplicates-actions">
+                        <p>Does your bug look different? You can still create it.</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description <span class="required">*</span></label>
+                    <textarea id="description" name="description" required rows="4"
+                              placeholder="Describe what went wrong..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="attachments">Attachments (Screenshots, Videos)</label>
+                    <input type="file" id="attachments" name="attachments" multiple 
+                           accept="image/*,video/*"
+                           class="file-input">
+                    <div class="help-text">Upload screenshots or videos (max 50MB per file)</div>
+                    <div id="filePreview" class="file-preview"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="steps_to_reproduce">Steps to Reproduce <span class="required">*</span></label>
+                    <textarea id="steps_to_reproduce" name="steps_to_reproduce" required rows="4"
+                              placeholder="1. Go to...&#10;2. Click on...&#10;3. See error..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expected_behavior">Expected Behavior <span class="required">*</span></label>
+                        <textarea id="expected_behavior" name="expected_behavior" required rows="3"
+                                  placeholder="What should happen?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="actual_behavior">Actual Behavior <span class="required">*</span></label>
+                        <textarea id="actual_behavior" name="actual_behavior" required rows="3"
+                                  placeholder="What actually happens?"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="environment">Environment</label>
+                        <select id="environment" name="environment">
+                            <option value="Production">Production</option>
+                            <option value="Staging">Staging</option>
+                            <option value="Local">Local</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">✅ Create Bug Report</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="result" class="result-section" style="display: none;"></div>
+        </main>
+        </div>
+
+        <div id="dashboardTab" class="tab-content">
+            <div class="dashboard">
+                <h2>📊 Epic Dashboard</h2>
+                <div id="dashboardContent" class="dashboard-loading">
+                    <div class="spinner"></div>
+                    <p>Loading statistics...</p>
+                </div>
+                <div class="last-updated" id="lastUpdated"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by AI • Reports created under <a href="https://hellofresh.atlassian.net/browse/REW-323" target="_blank">REW-323</a></p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
