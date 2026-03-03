@@ -264,26 +264,77 @@ def calculate_similarity(title, description, issue):
 def create_bug_in_jira(title, description, steps_to_reproduce, expected_behavior, actual_behavior, environment, priority='Medium', attachments=None):
     """
     Create a new bug in Jira under the specified epic with optional attachments.
+    Uses Atlassian Document Format (ADF) for proper rendering.
     """
-    # Format description
-    formatted_description = f"""h2. Issue Description
-{description}
-
-h2. Steps to Reproduce
-{steps_to_reproduce}
-
-h2. Expected Behavior
-{expected_behavior}
-
-h2. Actual Behavior
-{actual_behavior}
-
-h2. Environment
-{environment}
-
----
-_Created via AI Bug Reporter on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_
-"""
+    
+    # Build ADF description with proper structure
+    adf_content = [
+        # Issue Description heading
+        {
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "Issue Description"}]
+        },
+        {
+            "type": "paragraph",
+            "content": [{"type": "text", "text": description}]
+        },
+        # Steps to Reproduce heading
+        {
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "Steps to Reproduce"}]
+        },
+        {
+            "type": "paragraph",
+            "content": [{"type": "text", "text": steps_to_reproduce}]
+        },
+        # Expected Behavior heading
+        {
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "Expected Behavior"}]
+        },
+        {
+            "type": "paragraph",
+            "content": [{"type": "text", "text": expected_behavior}]
+        },
+        # Actual Behavior heading
+        {
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "Actual Behavior"}]
+        },
+        {
+            "type": "paragraph",
+            "content": [{"type": "text", "text": actual_behavior}]
+        },
+        # Environment heading
+        {
+            "type": "heading",
+            "attrs": {"level": 2},
+            "content": [{"type": "text", "text": "Environment"}]
+        },
+        {
+            "type": "paragraph",
+            "content": [{"type": "text", "text": environment}]
+        },
+        # Divider
+        {
+            "type": "rule"
+        },
+        # Footer
+        {
+            "type": "paragraph",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"Created via AI Bug Reporter on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    "marks": [{"type": "em"}]
+                }
+            ]
+        }
+    ]
     
     # Create issue payload
     payload = {
@@ -294,17 +345,7 @@ _Created via AI Bug Reporter on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_
             "description": {
                 "type": "doc",
                 "version": 1,
-                "content": [
-                    {
-                        "type": "paragraph",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": formatted_description
-                            }
-                        ]
-                    }
-                ]
+                "content": adf_content
             },
             "issuetype": {"name": "Bug"}
         }
