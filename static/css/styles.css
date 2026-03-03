@@ -1237,6 +1237,51 @@ footer a:hover {
 }
 
 /* Test Case Generator Styles */
+.gherkin-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.gherkin-header {
+    background: var(--hf-green);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: 3px solid var(--hf-green-dark);
+}
+
+.gherkin-header h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+}
+
+.gherkin-header p {
+    margin: 0;
+    opacity: 0.95;
+    font-size: 0.9rem;
+}
+
+.gherkin-code {
+    margin: 0;
+    padding: 2rem;
+    background: #f5f5f5;
+    color: #333;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+[data-theme="dark"] .gherkin-code {
+    background: #1e1e1e;
+    color: #d4d4d4;
+}
+
 .ticket-card {
     background: var(--card-bg);
     padding: 1.5rem;

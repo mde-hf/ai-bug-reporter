@@ -706,85 +706,232 @@ def extract_description_text(description):
 
 def generate_critical_path_tests(ticket_key, summary, description, issue_type):
     """
-    Generate critical path test cases based on ticket content.
-    Uses simple rule-based generation.
+    Generate test cases in Cucumber Gherkin format.
+    Organized by: Happy Path, Critical Path, Edge Cases, and Sad Path.
     """
-    test_cases = []
+    # Extract key words for feature name
+    feature_name = summary[:80] if len(summary) <= 80 else summary[:77] + "..."
     
-    # Test Case 1: Verify the issue can be reproduced
-    test_cases.append({
-        'id': 'TC-01',
-        'title': f'Verify {issue_type}: {summary}',
-        'priority': 'High',
-        'steps': [
-            'Navigate to the affected page/feature',
-            'Perform the actions described in the bug report',
-            'Observe the behavior'
-        ],
-        'expected_result': 'Issue should be reproducible as described' if issue_type == 'Bug' else 'Feature should behave as specified',
-        'test_data': 'Use data mentioned in ticket description'
-    })
+    gherkin_output = f"""Feature: {feature_name}
+  As a user
+  I want to verify the functionality described in {ticket_key}
+  So that the system behaves as expected
+
+  Background:
+    Given the system is in a stable state
+    And all prerequisites are met
+    And test data is prepared
+
+"""
     
-    # Test Case 2: Verify the fix/feature
-    test_cases.append({
-        'id': 'TC-02',
-        'title': f'Verify {issue_type} Resolution',
-        'priority': 'Critical',
-        'steps': [
-            'Apply the fix/changes',
-            'Navigate to the affected area',
-            'Perform the same actions as in TC-01',
-            'Verify the expected behavior'
-        ],
-        'expected_result': 'Issue should be resolved' if issue_type == 'Bug' else 'Feature should work as expected',
-        'test_data': 'Same test data as TC-01'
-    })
+    # HAPPY PATH - The ideal user flow
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# HAPPY PATH - Ideal User Journey
+# ═══════════════════════════════════════════════════════════════
+
+"""
     
-    # Test Case 3: Regression testing
-    test_cases.append({
-        'id': 'TC-03',
-        'title': 'Verify No Regression in Related Features',
-        'priority': 'High',
-        'steps': [
-            'Identify related features/components',
-            'Test each related feature',
-            'Verify no new issues introduced'
-        ],
-        'expected_result': 'All related features should continue to work normally',
-        'test_data': 'Standard test data for related features'
-    })
+    gherkin_output += f"""  @happy_path @smoke @priority_high
+  Scenario: Verify successful completion of main user flow
+    Given the user is on the application
+    When the user performs the expected actions
+    Then the system should respond correctly
+    And all expected elements should be displayed
+    And no errors should occur
+
+  @happy_path @regression
+  Scenario: Verify feature works with valid data
+    Given the user has valid input data
+    When the user submits the data
+    Then the system should process the request successfully
+    And the user should see a success message
+    And the data should be saved correctly
+
+"""
     
-    # Test Case 4: Edge cases
-    test_cases.append({
-        'id': 'TC-04',
-        'title': 'Verify Edge Cases and Boundary Conditions',
-        'priority': 'Medium',
-        'steps': [
-            'Test with empty/null values',
-            'Test with maximum allowed values',
-            'Test with special characters',
-            'Test with different user roles/permissions'
-        ],
-        'expected_result': 'System should handle edge cases gracefully',
-        'test_data': 'Edge case test data'
-    })
+    # CRITICAL PATH - Must-work scenarios
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# CRITICAL PATH - Essential Business Flows
+# ═══════════════════════════════════════════════════════════════
+
+"""
     
-    # Add environment-specific tests for bugs
     if issue_type == 'Bug':
-        test_cases.append({
-            'id': 'TC-05',
-            'title': 'Verify Across All Environments',
-            'priority': 'High',
-            'steps': [
-                'Test fix in Development environment',
-                'Test fix in Staging environment',
-                'Test fix in Production environment'
-            ],
-            'expected_result': 'Fix should work consistently across all environments',
-            'test_data': 'Environment-specific test data'
-        })
+        gherkin_output += f"""  @critical_path @bug_verification @priority_critical
+  Scenario: Verify the reported bug is reproducible
+    Given the system is in the state described in the bug report
+    When the user follows the steps to reproduce from {ticket_key}
+    Then the issue described should be observable
+    And all symptoms should match the bug description
+
+  @critical_path @bug_fix @priority_critical
+  Scenario: Verify the bug fix resolves the issue
+    Given the bug fix has been applied
+    When the user performs the same actions that previously caused the bug
+    Then the bug should no longer occur
+    And the system should behave as expected
+    And no new issues should be introduced
+
+"""
+    else:
+        gherkin_output += f"""  @critical_path @feature_verification @priority_critical
+  Scenario: Verify the core functionality works as specified
+    Given the new feature has been implemented
+    When the user accesses the feature
+    Then the feature should work as described in {ticket_key}
+    And all acceptance criteria should be met
+
+  @critical_path @integration @priority_critical
+  Scenario: Verify feature integrates with existing system
+    Given the feature is live in the system
+    When the user interacts with related features
+    Then all integrations should work seamlessly
+    And data flow should be correct across components
+
+"""
     
-    return test_cases
+    gherkin_output += """  @critical_path @cross_environment @priority_high
+  Scenario Outline: Verify functionality across all environments
+    Given the user is on the <environment> environment
+    When the user performs the main functionality
+    Then the system should behave consistently
+    And all features should work correctly
+
+    Examples:
+      | environment |
+      | development |
+      | staging     |
+      | production  |
+
+"""
+    
+    # EDGE CASES - Boundary conditions
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# EDGE CASES - Boundary Conditions & Special Scenarios
+# ═══════════════════════════════════════════════════════════════
+
+"""
+    
+    gherkin_output += """  @edge_case @boundary @priority_medium
+  Scenario: Verify handling of minimum values
+    Given the user enters minimum allowed values
+    When the user submits the form
+    Then the system should accept the input
+    And process it correctly without errors
+
+  @edge_case @boundary @priority_medium
+  Scenario: Verify handling of maximum values
+    Given the user enters maximum allowed values
+    When the user submits the form
+    Then the system should accept the input
+    And handle it appropriately
+
+  @edge_case @special_characters @priority_medium
+  Scenario Outline: Verify handling of special characters
+    Given the user enters data with <special_characters>
+    When the user submits the form
+    Then the system should handle it gracefully
+    And display appropriate feedback
+
+    Examples:
+      | special_characters           |
+      | unicode characters (émojis)  |
+      | SQL injection attempts       |
+      | HTML/script tags             |
+      | very long strings            |
+
+  @edge_case @permissions @priority_medium
+  Scenario Outline: Verify behavior with different user roles
+    Given the user is logged in as <role>
+    When the user attempts to access the feature
+    Then the system should <expected_behavior>
+
+    Examples:
+      | role          | expected_behavior                    |
+      | admin         | allow full access                    |
+      | standard_user | allow limited access                 |
+      | guest         | show appropriate restrictions        |
+
+"""
+    
+    # SAD PATH - Error scenarios
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# SAD PATH - Error Handling & Negative Scenarios
+# ═══════════════════════════════════════════════════════════════
+
+"""
+    
+    gherkin_output += """  @sad_path @validation @priority_high
+  Scenario: Verify validation for empty required fields
+    Given the user is on the form
+    When the user submits without filling required fields
+    Then the system should display validation errors
+    And prevent form submission
+    And show clear error messages
+
+  @sad_path @invalid_data @priority_high
+  Scenario Outline: Verify handling of invalid input data
+    Given the user enters <invalid_data>
+    When the user submits the form
+    Then the system should reject the input
+    And display an appropriate error message
+    And not process the request
+
+    Examples:
+      | invalid_data              |
+      | invalid email format      |
+      | negative numbers          |
+      | future dates (if invalid) |
+      | malformed data            |
+
+  @sad_path @authentication @priority_high
+  Scenario: Verify behavior when user is not authenticated
+    Given the user is not logged in
+    When the user tries to access the feature
+    Then the system should redirect to login
+    And preserve the intended destination
+
+  @sad_path @network @priority_medium
+  Scenario: Verify handling of network failures
+    Given the user has initiated an action
+    When a network error occurs
+    Then the system should show a user-friendly error
+    And allow the user to retry
+    And not lose user data
+
+  @sad_path @concurrent @priority_medium
+  Scenario: Verify handling of concurrent operations
+    Given multiple users are accessing the same resource
+    When they perform conflicting operations simultaneously
+    Then the system should handle race conditions gracefully
+    And maintain data integrity
+
+  @sad_path @timeout @priority_medium
+  Scenario: Verify handling of session timeout
+    Given the user has been inactive for a long time
+    When the session expires
+    Then the system should handle timeout appropriately
+    And preserve user work if possible
+    And show clear notification to user
+
+"""
+    
+    # REGRESSION
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# REGRESSION - Ensure No Side Effects
+# ═══════════════════════════════════════════════════════════════
+
+  @regression @priority_high
+  Scenario: Verify related features still work correctly
+    Given the changes from this ticket are live
+    When the user accesses related features
+    Then all related functionality should work as before
+    And no regressions should be introduced
+    And performance should not degrade
+
+"""
+    
+    return gherkin_output
 
 if __name__ == '__main__':
     # Check for required environment variables

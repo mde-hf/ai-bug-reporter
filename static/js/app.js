@@ -992,70 +992,46 @@ function displayTestCases(data) {
         </div>
     `;
     
-    // Display test cases
-    let testCasesHTML = '<div class="test-cases-list">';
-    
-    data.test_cases.forEach(tc => {
-        const priorityColor = tc.priority === 'Critical' ? '#dc2626' : 
-                            tc.priority === 'High' ? '#f59e0b' : '#10b981';
-        
-        testCasesHTML += `
-            <div class="test-case-card">
-                <div class="test-case-header">
-                    <h4>${tc.id}: ${tc.title}</h4>
-                    <span class="priority-badge" style="background: ${priorityColor};">${tc.priority}</span>
-                </div>
-                
-                <div class="test-case-section">
-                    <strong>📝 Test Steps:</strong>
-                    <ol>
-                        ${tc.steps.map(step => `<li>${step}</li>`).join('')}
-                    </ol>
-                </div>
-                
-                <div class="test-case-section">
-                    <strong>✅ Expected Result:</strong>
-                    <p>${tc.expected_result}</p>
-                </div>
-                
-                <div class="test-case-section">
-                    <strong>📊 Test Data:</strong>
-                    <p>${tc.test_data}</p>
-                </div>
+    // Display Gherkin test cases
+    testCasesDiv.innerHTML = `
+        <div class="gherkin-container">
+            <div class="gherkin-header">
+                <h4>🥒 Cucumber/Gherkin Test Scenarios</h4>
+                <p>Behavior-Driven Development (BDD) format organized by test paths</p>
             </div>
-        `;
-    });
-    
-    testCasesHTML += '</div>';
-    testCasesDiv.innerHTML = testCasesHTML;
+            <pre class="gherkin-code"><code>${escapeHtml(data.test_cases)}</code></pre>
+        </div>
+    `;
     
     // Store for copying
     window.currentTestCases = data;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function copyTestCases() {
     if (!window.currentTestCases) return;
     
     const data = window.currentTestCases;
-    let text = `Test Cases for ${data.ticket_key}: ${data.summary}\n`;
-    text += `Ticket URL: ${data.ticket_url}\n`;
-    text += `Issue Type: ${data.issue_type} | Status: ${data.status} | Priority: ${data.priority}\n`;
-    text += `\n${'='.repeat(80)}\n\n`;
-    
-    data.test_cases.forEach(tc => {
-        text += `${tc.id}: ${tc.title}\n`;
-        text += `Priority: ${tc.priority}\n\n`;
-        text += `Test Steps:\n`;
-        tc.steps.forEach((step, idx) => {
-            text += `  ${idx + 1}. ${step}\n`;
-        });
-        text += `\nExpected Result:\n  ${tc.expected_result}\n\n`;
-        text += `Test Data:\n  ${tc.test_data}\n`;
-        text += `\n${'-'.repeat(80)}\n\n`;
-    });
+    let text = `# Test Cases for ${data.ticket_key}: ${data.summary}\n`;
+    text += `# Ticket URL: ${data.ticket_url}\n`;
+    text += `# Issue Type: ${data.issue_type} | Status: ${data.status} | Priority: ${data.priority}\n`;
+    text += `\n${data.test_cases}\n`;
     
     navigator.clipboard.writeText(text).then(() => {
-        alert('✅ Test cases copied to clipboard!');
+        const btn = document.querySelector('#testcaseTab .btn-secondary');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        btn.style.background = 'var(--hf-green)';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = '';
+        }, 2000);
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
