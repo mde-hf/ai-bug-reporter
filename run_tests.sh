@@ -45,14 +45,18 @@ fi
 
 # Check JavaScript syntax
 print_info "Checking JavaScript syntax..."
-node -c static/js/app.js
-
-if [ $? -eq 0 ]; then
-    print_success "JavaScript syntax check passed!"
-    echo ""
+if command -v node &> /dev/null 2>&1; then
+    if node -c static/js/app.js 2>/dev/null; then
+        print_success "JavaScript syntax check passed!"
+        echo ""
+    else
+        # Node exists but syntax check failed
+        print_error "JavaScript syntax errors found!"
+        exit 1
+    fi
 else
-    print_error "JavaScript syntax errors found!"
-    exit 1
+    print_warning "Node.js not available, skipping JavaScript syntax check"
+    echo ""
 fi
 
 # Check CSS syntax
