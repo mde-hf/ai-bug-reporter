@@ -87,6 +87,15 @@ header {
     margin-bottom: 2rem;
 }
 
+.tribe-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    letter-spacing: 1px;
+    margin: 0.5rem 0;
+    text-transform: uppercase;
+}
+
 .tabs {
     display: flex;
     gap: 0.5rem;
