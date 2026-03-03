@@ -1,0 +1,6 @@
+*.env diff=secret
+.env.* diff=secret
+*credentials* diff=secret
+*secret* diff=secret
+*token* diff=secret
+*password* diff=secret

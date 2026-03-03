@@ -11,6 +11,9 @@ ENV/
 # Environment
 .env
 
+# Security documentation (keep local only)
+SECURITY_INCIDENT.md
+
 # IDE
 .vscode/
 .idea/
