@@ -710,6 +710,13 @@ function displayDashboard(stats) {
             </div>
         </div>
         
+        <div class="breakdown-section" style="margin-top: 2rem;">
+            <h3>📈 Bug Creation Trend</h3>
+            <div class="chart-container">
+                <canvas id="creationTrendChart"></canvas>
+            </div>
+        </div>
+        
         <div class="stats-grid" style="margin-top: 2rem;">
             <div class="stat-card">
                 <h3>By Platform</h3>
@@ -753,4 +760,135 @@ function displayDashboard(stats) {
             </div>
         </div>
     `;
+    
+    // Render creation trend chart
+    renderCreationTrendChart(stats.creation_trend);
+}
+
+// Chart rendering
+let creationTrendChartInstance = null;
+
+function renderCreationTrendChart(creationTrend) {
+    const canvas = document.getElementById('creationTrendChart');
+    if (!canvas) return;
+    
+    // Destroy previous chart instance if exists
+    if (creationTrendChartInstance) {
+        creationTrendChartInstance.destroy();
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Sort weeks chronologically and get last 12 weeks
+    const sortedWeeks = Object.keys(creationTrend).sort();
+    const last12Weeks = sortedWeeks.slice(-12);
+    
+    // Format labels to be more readable (e.g., "Week 5" or "Jan W1")
+    const labels = last12Weeks.map(week => {
+        const [year, weekNum] = week.split('-W');
+        const weekDate = getDateOfWeek(parseInt(weekNum), parseInt(year));
+        return weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    const data = last12Weeks.map(week => creationTrend[week] || 0);
+    
+    // Detect theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#e2e8f0' : '#1e293b';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    
+    creationTrendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Bugs Created',
+                data: data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: textColor,
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: gridColor,
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return `Bugs Created: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            size: 12
+                        },
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: gridColor,
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: {
+                        color: gridColor,
+                        drawBorder: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Helper function to get the Monday of a given week number
+function getDateOfWeek(weekNum, year) {
+    const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = simple;
+    if (dow <= 4)
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+    return ISOweekStart;
 }

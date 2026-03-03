@@ -1162,3 +1162,22 @@ footer a:hover {
         transform: scale(1);
     }
 }
+
+/* Chart Container Styles */
+.chart-container {
+    position: relative;
+    height: 350px;
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-top: 1rem;
+}
+
+[data-theme="dark"] .chart-container {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
