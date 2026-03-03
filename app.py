@@ -829,7 +829,10 @@ def handle_google_drive_test_cases(drive_url):
         }), 500
 
 def extract_description_text(description):
-    """Extract plain text from JIRA description object."""
+    """
+    Extract plain text from JIRA description object (ADF format).
+    Preserves structure with section headings for better AI analysis.
+    """
     if not description:
         return "No description provided"
     
@@ -838,22 +841,205 @@ def extract_description_text(description):
     
     # Handle Atlassian Document Format (ADF)
     text_parts = []
+    current_heading = None
     
     def extract_text(node):
+        nonlocal current_heading
+        
         if isinstance(node, dict):
-            if node.get('type') == 'text':
+            node_type = node.get('type')
+            
+            # Handle headings
+            if node_type == 'heading':
+                heading_text = ''
+                if 'content' in node:
+                    for child in node['content']:
+                        if isinstance(child, dict) and child.get('type') == 'text':
+                            heading_text = child.get('text', '')
+                current_heading = heading_text
+                text_parts.append(f"\n## {heading_text}\n")
+            
+            # Handle text nodes
+            elif node_type == 'text':
                 text_parts.append(node.get('text', ''))
-            if 'content' in node:
+            
+            # Handle paragraphs
+            elif node_type == 'paragraph':
+                if 'content' in node:
+                    for child in node['content']:
+                        extract_text(child)
+                    text_parts.append('\n')
+            
+            # Handle rules (horizontal lines)
+            elif node_type == 'rule':
+                text_parts.append('\n---\n')
+            
+            # Recursively process content
+            elif 'content' in node:
                 for child in node['content']:
                     extract_text(child)
+                    
         elif isinstance(node, list):
             for item in node:
                 extract_text(item)
     
     extract_text(description)
-    return ' '.join(text_parts).strip() or "No description provided"
+    
+    # Clean up the text
+    result = ''.join(text_parts).strip()
+    return result if result else "No description provided"
 
 def parse_ticket_content(description):
+    """
+    Parse ticket description to extract:
+    - Acceptance Criteria
+    - User Stories  
+    - Business Rules
+    - Google Drive links
+    
+    Optimized to recognize explicit Acceptance Criteria sections.
+    """
+    desc_lower = description.lower()
+    
+    result = {
+        'acceptance_criteria': [],
+        'user_stories': [],
+        'business_rules': [],
+        'google_drive_links': [],
+        'raw_description': description
+    }
+    
+    # Split description into lines for parsing
+    lines = description.split('\n')
+    
+    # Track what section we're in
+    in_acceptance_criteria_section = False
+    in_user_story_section = False
+    in_business_rules_section = False
+    current_section = None
+    section_content = []
+    
+    for line in lines:
+        line_stripped = line.strip()
+        line_lower = line_stripped.lower()
+        
+        # Skip empty lines and separators
+        if not line_stripped or line_stripped in ['---', '___']:
+            continue
+        
+        # Check for Acceptance Criteria header
+        if any(keyword in line_lower for keyword in [
+            'acceptance criteria', 
+            'acceptance criterion',
+            'acceptance criteria:',
+            '## acceptance criteria',
+            'ac:',
+            'a.c.'
+        ]):
+            in_acceptance_criteria_section = True
+            in_user_story_section = False
+            in_business_rules_section = False
+            current_section = 'acceptance_criteria'
+            continue
+        
+        # Check for User Story header
+        if any(keyword in line_lower for keyword in [
+            'user story',
+            'user stories',
+            '## user story',
+            'user stories:'
+        ]):
+            in_user_story_section = True
+            in_acceptance_criteria_section = False
+            in_business_rules_section = False
+            current_section = 'user_story'
+            continue
+        
+        # Check for Business Rules header
+        if any(keyword in line_lower for keyword in [
+            'business rule',
+            'business rules',
+            '## business rule',
+            'rules:'
+        ]):
+            in_business_rules_section = True
+            in_acceptance_criteria_section = False
+            in_user_story_section = False
+            current_section = 'business_rules'
+            continue
+        
+        # Check if we're entering a new section (any ## heading that's not AC/US/BR)
+        if line_stripped.startswith('##'):
+            # End current section
+            in_acceptance_criteria_section = False
+            in_user_story_section = False
+            in_business_rules_section = False
+            
+            # Track the section type
+            if 'step' in line_lower and 'reproduce' in line_lower:
+                current_section = 'steps_to_reproduce'
+            elif 'expected' in line_lower and 'behavior' in line_lower:
+                current_section = 'expected_behavior'
+            elif 'actual' in line_lower and 'behavior' in line_lower:
+                current_section = 'actual_behavior'
+            elif 'environment' in line_lower:
+                current_section = 'environment'
+            else:
+                current_section = 'other'
+            
+            section_content = []
+            continue
+        
+        # Extract content based on current section
+        if in_acceptance_criteria_section:
+            # In AC section - capture criteria
+            clean_line = line_stripped.lstrip('*-•0123456789.) ').strip()
+            if clean_line and len(clean_line) > 5:
+                result['acceptance_criteria'].append(clean_line)
+        
+        elif in_user_story_section:
+            # In user story section
+            if 'as a' in line_lower or 'as an' in line_lower:
+                result['user_stories'].append(line_stripped)
+            elif line_stripped:
+                # Might be continuation of user story
+                if result['user_stories']:
+                    result['user_stories'][-1] += ' ' + line_stripped
+        
+        elif in_business_rules_section:
+            # In business rules section
+            clean_line = line_stripped.lstrip('*-•0123456789.) ').strip()
+            if clean_line and len(clean_line) > 5:
+                result['business_rules'].append(clean_line)
+        
+        else:
+            # Not in a specific section - check for patterns
+            
+            # Check for user story pattern anywhere
+            if 'as a' in line_lower or 'as an' in line_lower:
+                result['user_stories'].append(line_stripped)
+            
+            # Check for bullet points in Steps/Expected/Actual sections
+            if current_section in ['steps_to_reproduce', 'expected_behavior']:
+                if line_stripped and (line_stripped.startswith('*') or 
+                                     line_stripped.startswith('-') or 
+                                     line_stripped.startswith('•') or
+                                     (len(line_stripped) > 2 and line_stripped[0].isdigit() and line_stripped[1] in '.)')):
+                    clean_line = line_stripped.lstrip('*-•0123456789.) ').strip()
+                    if clean_line and len(clean_line) > 10:
+                        # Add as acceptance criteria if not already added
+                        result['acceptance_criteria'].append(clean_line)
+                elif line_stripped:
+                    # Regular content in these sections
+                    section_content.append(line_stripped)
+        
+        # Check for Google Drive links anywhere
+        if 'drive.google.com' in line or 'docs.google.com' in line:
+            import re
+            urls = re.findall(r'https?://(?:drive|docs)\.google\.com[^\s]+', line)
+            result['google_drive_links'].extend(urls)
+    
+    return result
     """
     Parse ticket description to extract:
     - Acceptance Criteria
@@ -1012,65 +1198,106 @@ def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue
 def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content):
     """
     Build an intelligent prompt for Claude AI to generate test cases.
+    Uses the structured description text extracted from JIRA.
     """
     has_ac = len(parsed_content['acceptance_criteria']) > 0
     has_user_stories = len(parsed_content['user_stories']) > 0
     has_business_rules = len(parsed_content['business_rules']) > 0
     has_google_drive = len(parsed_content['google_drive_links']) > 0
     
-    prompt = f"""You are an expert QA engineer at HelloFresh. Generate comprehensive test cases in Cucumber/Gherkin format for the following ticket:
+    prompt = f"""You are an expert QA engineer at HelloFresh. Generate comprehensive test cases in Cucumber/Gherkin format based on the JIRA ticket details below.
 
-**Ticket:** {ticket_key}
+# Ticket Information
+
+**Ticket ID:** {ticket_key}
 **Type:** {issue_type}
 **Summary:** {summary}
 
-**Description:**
-{description[:1500]}
+# Full Ticket Description
+
+{description}
 
 """
     
-    # Add parsed content if available
+    # Only add parsed sections if they provide additional info beyond the description
     if has_ac:
-        prompt += f"\n**Acceptance Criteria Found:**\n"
+        prompt += f"\n# 🎯 IMPORTANT: Acceptance Criteria (Must Test)\n\n"
+        prompt += f"The ticket explicitly defines {len(parsed_content['acceptance_criteria'])} acceptance criteria.\n"
+        prompt += f"**YOU MUST create dedicated test scenarios for EACH criterion below:**\n\n"
         for idx, ac in enumerate(parsed_content['acceptance_criteria'][:10], 1):
             prompt += f"{idx}. {ac}\n"
+        prompt += f"\nTag these scenarios with @acceptance_criteria @AC{idx} @priority_critical\n"
     
     if has_user_stories:
-        prompt += f"\n**User Stories Found:**\n"
+        prompt += f"\n# User Stories Identified\n\n"
         for idx, story in enumerate(parsed_content['user_stories'][:5], 1):
             prompt += f"{idx}. {story}\n"
     
     if has_business_rules:
-        prompt += f"\n**Business Rules Found:**\n"
+        prompt += f"\n# Business Rules Identified\n\n"
         for idx, rule in enumerate(parsed_content['business_rules'][:5], 1):
             prompt += f"{idx}. {rule}\n"
     
     if has_google_drive:
-        prompt += f"\n**Referenced Documents:**\n"
+        prompt += f"\n# Referenced Documents\n\n"
         for link in parsed_content['google_drive_links']:
             prompt += f"- {link}\n"
     
     prompt += """
 
-**Requirements:**
-1. Generate test cases in proper Cucumber/Gherkin format
-2. Include a Feature description with context
-3. Create test scenarios for:
-   - **Acceptance Criteria Tests** (if provided) - One scenario per criterion with @AC tags
-   - **Happy Path** - The ideal user journey (@happy_path @smoke)
-   - **Critical Path** - Essential business flows (@critical_path)
-   - **Edge Cases** - Boundary conditions and special scenarios (@edge_case)
-   - **Sad Path** - Error handling and validation (@sad_path @validation)
-   - **Regression** - Ensure no side effects (@regression)
-4. Use Given/When/Then format
-5. Add appropriate tags (@priority_critical, @priority_high, @priority_medium)
-6. Consider multi-platform scenarios (iOS/Android/Web) where relevant
-7. Include Scenario Outlines with Examples for data-driven tests
-8. Add comments with context where helpful
+# Your Task
 
-**Platform Context:** This is for HelloFresh's Loyalty & Virality tribe
+Generate production-ready test cases in Cucumber/Gherkin format. Analyze the ticket description carefully, especially:
+- **Issue Description**: Understand what the problem/feature is
+- **Acceptance Criteria** (if present): CREATE A DEDICATED TEST SCENARIO FOR EACH ONE
+- **Steps to Reproduce**: Use these as a basis for test scenarios
+- **Expected vs Actual Behavior**: Define clear assertions
+- **Environment**: Consider platform-specific scenarios
 
-Generate comprehensive, production-ready test cases that a QA engineer can immediately use."""
+# Test Case Requirements
+
+1. **Feature description** with clear context
+
+2. **Background** section if there are common preconditions
+
+3. **CRITICAL: Acceptance Criteria Tests (if provided above)**
+   - Create ONE detailed scenario for EACH acceptance criterion
+   - Use the exact criterion text in the scenario name
+   - Tag each with @acceptance_criteria @AC1, @AC2, etc.
+   - Make these tests @priority_critical
+   - Be specific and directly test what the criterion states
+
+4. **Additional test scenarios organized by priority:**
+   - **@critical** - Core functionality, must work
+   - **@high** - Important user flows
+   - **@medium** - Secondary features and edge cases
+   - **@low** - Nice-to-have validations
+
+5. **Include these test paths:**
+   - **Happy Path** (@happy_path @smoke) - Everything works perfectly
+   - **Critical Path** (@critical_path) - Essential business flows
+   - **Reproduction Path** (for bugs) - Reproduce the issue from the description
+   - **Edge Cases** (@edge_case) - Boundary conditions, special inputs
+   - **Error Handling** (@sad_path @validation) - Invalid inputs, error states
+
+6. **Use proper Gherkin syntax:**
+   - Clear Given/When/Then steps
+   - Scenario Outlines with Examples for data-driven tests
+   - Meaningful scenario names that describe WHAT is being tested
+   - Appropriate tags for organization
+
+7. **Platform considerations:**
+   - If environment mentions iOS/Android/Web, include platform-specific scenarios
+   - Consider mobile vs desktop differences where relevant
+
+8. **Be specific and actionable:**
+   - Use concrete values and examples
+   - Make assertions verifiable
+   - Include enough detail for a QA engineer to execute
+
+# Output Format
+
+Generate ONLY the Gherkin feature file content. Do not include any explanatory text before or after."""
     
     return prompt
 
