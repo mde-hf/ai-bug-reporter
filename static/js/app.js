@@ -42,6 +42,16 @@ squadSelect.addEventListener('change', function() {
     }
 });
 
+// Dashboard project selector (for future multi-project support)
+const dashboardProject = document.getElementById('dashboardProject');
+if (dashboardProject) {
+    dashboardProject.addEventListener('change', function() {
+        // Currently only Loyalty 2.0 is active, but dropdown is ready for future projects
+        // When other projects are ready, this will filter dashboard data by selected project
+        console.log('Dashboard project selected:', this.value);
+    });
+}
+
 // Function to reset squad selection
 function resetSquadSelection() {
     squadSelect.value = '';

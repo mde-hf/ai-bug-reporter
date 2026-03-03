@@ -39,15 +39,15 @@
 
             <form id="bugForm">
                 <div class="form-group">
-                    <label for="squad">Select Your Squad <span class="required">*</span></label>
+                    <label for="squad">Project <span class="required">*</span></label>
                     <select id="squad" name="squad" required>
-                        <option value="">-- Choose a squad --</option>
+                        <option value="">-- Choose a project --</option>
                         <option value="loyalty-mission">Loyalty Mission Squad</option>
                         <option value="virality">Virality Squad</option>
                         <option value="rewards">Rewards Squad</option>
                         <option value="loyalty-2.0">Loyalty 2.0 Bug Reporting</option>
                     </select>
-                    <div class="help-text">Select the squad you're reporting a bug for</div>
+                    <div class="help-text">Select the project you're reporting a bug for</div>
                 </div>
 
                 <div id="bugFormFields" style="display: none;">
@@ -138,7 +138,18 @@
 
         <div id="dashboardTab" class="tab-content">
             <div class="dashboard">
-                <h2>📊 Epic Dashboard</h2>
+                <div class="dashboard-header">
+                    <h2>📊 Epic Dashboard</h2>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="dashboardProject">Project</label>
+                        <select id="dashboardProject" name="dashboardProject">
+                            <option value="loyalty-mission">Loyalty Mission Squad</option>
+                            <option value="virality">Virality Squad</option>
+                            <option value="rewards">Rewards Squad</option>
+                            <option value="loyalty-2.0" selected>Loyalty 2.0 Bug Reporting</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="dashboardContent" class="dashboard-loading">
                     <div class="spinner"></div>
                     <p>Loading statistics...</p>
