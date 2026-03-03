@@ -979,14 +979,23 @@ function displayTestCases(data) {
     const ticketInfoDiv = document.getElementById('ticketInfo');
     const testCasesDiv = document.getElementById('testCasesContent');
     
-    // Display ticket information
+    // Determine source type and display appropriate information
+    const isGoogleDrive = data.source_type === 'google_drive';
+    const sourceKey = isGoogleDrive ? `GDOC` : data.ticket_key;
+    const sourceUrl = isGoogleDrive ? data.document_url : data.ticket_url;
+    const sourceIcon = isGoogleDrive ? '📄' : '🎫';
+    
+    // Display source information
     ticketInfoDiv.innerHTML = `
         <div class="ticket-card">
-            <h4><a href="${data.ticket_url}" target="_blank" style="color: var(--hf-green);">${data.ticket_key}</a>: ${data.summary}</h4>
+            <h4>
+                ${sourceIcon} <a href="${sourceUrl}" target="_blank" style="color: var(--hf-green);">${sourceKey}</a>: ${data.summary}
+            </h4>
             <div class="ticket-meta">
-                <span class="badge">${data.issue_type}</span>
-                <span class="badge">${data.status}</span>
-                <span class="badge">${data.priority}</span>
+                <span class="badge">${isGoogleDrive ? 'Google Docs' : data.issue_type}</span>
+                ${!isGoogleDrive ? `<span class="badge">${data.status}</span>` : ''}
+                ${!isGoogleDrive ? `<span class="badge">${data.priority}</span>` : ''}
+                <span class="badge" style="background: var(--hf-green);">Source: ${isGoogleDrive ? 'Google Drive' : 'JIRA'}</span>
             </div>
             <p style="margin-top: 1rem; color: var(--text-secondary);">${data.description.substring(0, 200)}${data.description.length > 200 ? '...' : ''}</p>
         </div>

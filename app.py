@@ -2,6 +2,7 @@
 """
 Simple AI Bug Reporting Tool
 Checks for duplicate tickets before creating new ones in Jira.
+AI-powered test case generation using AWS Bedrock (Claude).
 """
 
 import os
@@ -11,6 +12,8 @@ from flask_cors import CORS
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+import boto3
+from botocore.exceptions import ClientError
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,6 +29,23 @@ JIRA_EMAIL = os.environ.get('JIRA_EMAIL')
 JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
 EPIC_KEY = os.environ.get('EPIC_KEY', 'REW-323')
 PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
+
+# AWS Bedrock Configuration
+AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+BEDROCK_MODEL_ID = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
+
+# Initialize AWS Bedrock client
+try:
+    bedrock_runtime = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=AWS_REGION,
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+    )
+    print(f"[INFO] AWS Bedrock client initialized with model: {BEDROCK_MODEL_ID}", flush=True)
+except Exception as e:
+    print(f"[WARNING] Failed to initialize AWS Bedrock client: {e}", flush=True)
+    bedrock_runtime = None
 
 def get_jira_headers():
     """Get headers for Jira API requests."""
@@ -621,63 +641,151 @@ def health():
 @app.route('/api/generate-test-cases', methods=['POST'])
 def generate_test_cases():
     """
-    Fetch JIRA ticket and generate test cases based on the ticket content.
+    Generate test cases from JIRA ticket or Google Drive link.
+    Supports:
+    - JIRA ticket URL (e.g., https://company.atlassian.net/browse/KEY-123)
+    - JIRA ticket key (e.g., KEY-123)
+    - Google Drive/Docs URL (for acceptance criteria documents)
     """
     try:
         data = request.get_json()
-        ticket_input = data.get('ticket')
+        source_input = data.get('ticket')
         
-        if not ticket_input:
-            return jsonify({'error': 'Ticket link or key is required'}), 400
+        if not source_input:
+            return jsonify({'error': 'JIRA ticket or Google Drive link is required'}), 400
         
-        # Extract ticket key from URL or use as-is
-        ticket_key = ticket_input.strip()
-        if 'atlassian.net/browse/' in ticket_key:
-            ticket_key = ticket_key.split('/browse/')[-1].split('?')[0]
+        source_input = source_input.strip()
         
-        # Fetch ticket from JIRA
-        print(f"[INFO] Fetching ticket: {ticket_key}", flush=True)
+        # Check if it's a Google Drive link
+        if 'drive.google.com' in source_input or 'docs.google.com' in source_input:
+            return handle_google_drive_test_cases(source_input)
         
-        response = requests.get(
-            f'{JIRA_API_BASE}/rest/api/3/issue/{ticket_key}',
-            headers=get_jira_headers()
-        )
-        
-        if not response.ok:
-            return jsonify({'error': f'Failed to fetch ticket: {response.status_code}'}), 400
-        
-        issue = response.json()
-        
-        # Extract ticket information
-        summary = issue['fields']['summary']
-        description = issue['fields'].get('description', {})
-        issue_type = issue['fields']['issuetype']['name']
-        status = issue['fields']['status']['name']
-        priority = issue['fields'].get('priority', {}).get('name', 'None')
-        
-        # Extract description text
-        desc_text = extract_description_text(description)
-        
-        # Generate test cases based on ticket content
-        test_cases = generate_critical_path_tests(ticket_key, summary, desc_text, issue_type)
-        
-        return jsonify({
-            'success': True,
-            'ticket_key': ticket_key,
-            'ticket_url': f'{JIRA_BASE_URL}/browse/{ticket_key}',
-            'summary': summary,
-            'description': desc_text,
-            'issue_type': issue_type,
-            'status': status,
-            'priority': priority,
-            'test_cases': test_cases
-        })
+        # Otherwise, treat as JIRA ticket
+        return handle_jira_test_cases(source_input)
         
     except Exception as e:
         print(f"[ERROR] Test case generation failed: {e}", flush=True)
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+def handle_jira_test_cases(ticket_input):
+    """Handle test case generation from JIRA ticket."""
+    # Extract ticket key from URL or use as-is
+    ticket_key = ticket_input
+    if 'atlassian.net/browse/' in ticket_key:
+        ticket_key = ticket_key.split('/browse/')[-1].split('?')[0]
+    
+    # Fetch ticket from JIRA
+    print(f"[INFO] Fetching JIRA ticket: {ticket_key}", flush=True)
+    
+    response = requests.get(
+        f'{JIRA_API_BASE}/rest/api/3/issue/{ticket_key}',
+        headers=get_jira_headers()
+    )
+    
+    if not response.ok:
+        return jsonify({'error': f'Failed to fetch ticket: {response.status_code}'}), 400
+    
+    issue = response.json()
+    
+    # Extract ticket information
+    summary = issue['fields']['summary']
+    description = issue['fields'].get('description', {})
+    issue_type = issue['fields']['issuetype']['name']
+    status = issue['fields']['status']['name']
+    priority = issue['fields'].get('priority', {}).get('name', 'None')
+    
+    # Extract description text
+    desc_text = extract_description_text(description)
+    
+    # Parse ticket content for structured information
+    parsed_content = parse_ticket_content(desc_text)
+    
+    # Generate test cases using AI (with fallback to rule-based)
+    test_cases = generate_critical_path_tests_with_ai(ticket_key, summary, desc_text, issue_type, parsed_content)
+    
+    return jsonify({
+        'success': True,
+        'source_type': 'jira',
+        'ticket_key': ticket_key,
+        'ticket_url': f'{JIRA_BASE_URL}/browse/{ticket_key}',
+        'summary': summary,
+        'description': desc_text,
+        'issue_type': issue_type,
+        'status': status,
+        'priority': priority,
+        'test_cases': test_cases
+    })
+
+def handle_google_drive_test_cases(drive_url):
+    """
+    Handle test case generation from Google Drive link.
+    Note: This requires the document to be publicly accessible or proper authentication.
+    """
+    print(f"[INFO] Processing Google Drive link: {drive_url}", flush=True)
+    
+    # Extract document ID from various Google Drive URL formats
+    doc_id = None
+    if '/d/' in drive_url:
+        doc_id = drive_url.split('/d/')[-1].split('/')[0]
+    elif 'id=' in drive_url:
+        doc_id = drive_url.split('id=')[-1].split('&')[0]
+    
+    if not doc_id:
+        return jsonify({'error': 'Could not extract document ID from Google Drive URL'}), 400
+    
+    try:
+        # Try to fetch as Google Docs (export as plain text)
+        export_url = f'https://docs.google.com/document/d/{doc_id}/export?format=txt'
+        
+        response = requests.get(export_url, timeout=10)
+        
+        if response.status_code == 200:
+            content = response.text
+            
+            # Extract title from first line or use generic
+            lines = content.split('\n')
+            title = lines[0].strip() if lines else "Google Drive Document"
+            description = '\n'.join(lines[1:]).strip() if len(lines) > 1 else content
+            
+            # Parse content for structured information
+            parsed_content = parse_ticket_content(description)
+            
+            # Generate test cases using AI (with fallback)
+            test_cases = generate_critical_path_tests_with_ai(
+                f"GDOC-{doc_id[:8]}", 
+                title, 
+                description, 
+                "Documentation",
+                parsed_content
+            )
+            
+            return jsonify({
+                'success': True,
+                'source_type': 'google_drive',
+                'document_id': doc_id,
+                'document_url': drive_url,
+                'summary': title,
+                'description': description[:500] + ('...' if len(description) > 500 else ''),
+                'issue_type': 'Documentation',
+                'status': 'N/A',
+                'priority': 'N/A',
+                'test_cases': test_cases
+            })
+        else:
+            # Document might not be public or not a Google Doc
+            return jsonify({
+                'error': 'Could not access Google Drive document. Please ensure:\n'
+                        '1. The document is shared with "Anyone with the link"\n'
+                        '2. The link is a Google Docs document (not Sheets or Slides)\n'
+                        f'3. Status code received: {response.status_code}'
+            }), 400
+            
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            'error': f'Failed to fetch Google Drive document: {str(e)}'
+        }), 500
 
 def extract_description_text(description):
     """Extract plain text from JIRA description object."""
@@ -704,7 +812,439 @@ def extract_description_text(description):
     extract_text(description)
     return ' '.join(text_parts).strip() or "No description provided"
 
-def generate_critical_path_tests(ticket_key, summary, description, issue_type):
+def parse_ticket_content(description):
+    """
+    Parse ticket description to extract:
+    - Acceptance Criteria
+    - User Stories
+    - Business Rules
+    - Google Drive links
+    """
+    desc_lower = description.lower()
+    
+    result = {
+        'acceptance_criteria': [],
+        'user_stories': [],
+        'business_rules': [],
+        'google_drive_links': [],
+        'raw_description': description
+    }
+    
+    # Split description into lines for parsing
+    lines = description.split('\n')
+    
+    # State tracking for section parsing
+    in_acceptance_criteria = False
+    in_user_story = False
+    in_business_rules = False
+    current_section = []
+    
+    for line in lines:
+        line_lower = line.lower().strip()
+        
+        # Check for section headers
+        if any(keyword in line_lower for keyword in ['acceptance criteria', 'acceptance criterion', 'ac:', 'a.c.']):
+            if current_section:
+                if in_user_story:
+                    result['user_stories'].append('\n'.join(current_section))
+                elif in_business_rules:
+                    result['business_rules'].append('\n'.join(current_section))
+            in_acceptance_criteria = True
+            in_user_story = False
+            in_business_rules = False
+            current_section = []
+            continue
+            
+        elif any(keyword in line_lower for keyword in ['user story', 'user stories', 'as a', 'as an']):
+            if current_section:
+                if in_acceptance_criteria:
+                    result['acceptance_criteria'].append('\n'.join(current_section))
+                elif in_business_rules:
+                    result['business_rules'].append('\n'.join(current_section))
+            in_user_story = True
+            in_acceptance_criteria = False
+            in_business_rules = False
+            current_section = []
+            if 'as a' in line_lower or 'as an' in line_lower:
+                current_section.append(line.strip())
+            continue
+            
+        elif any(keyword in line_lower for keyword in ['business rule', 'business rules', 'rules:']):
+            if current_section:
+                if in_acceptance_criteria:
+                    result['acceptance_criteria'].append('\n'.join(current_section))
+                elif in_user_story:
+                    result['user_stories'].append('\n'.join(current_section))
+            in_business_rules = True
+            in_acceptance_criteria = False
+            in_user_story = False
+            current_section = []
+            continue
+        
+        # Check for Google Drive links
+        if 'drive.google.com' in line or 'docs.google.com' in line:
+            import re
+            urls = re.findall(r'https?://(?:drive|docs)\.google\.com[^\s]+', line)
+            result['google_drive_links'].extend(urls)
+        
+        # Collect content for current section
+        if line.strip() and (in_acceptance_criteria or in_user_story or in_business_rules):
+            # Skip empty lines and section headers
+            if line.strip() and not line.strip().startswith('#'):
+                current_section.append(line.strip())
+    
+    # Add remaining section
+    if current_section:
+        if in_acceptance_criteria:
+            result['acceptance_criteria'].append('\n'.join(current_section))
+        elif in_user_story:
+            result['user_stories'].append('\n'.join(current_section))
+        elif in_business_rules:
+            result['business_rules'].append('\n'.join(current_section))
+    
+    # Also check for bullet points that might be acceptance criteria
+    if not result['acceptance_criteria']:
+        ac_bullets = []
+        for line in lines:
+            line_stripped = line.strip()
+            # Look for bullet points or numbered lists
+            if line_stripped and (line_stripped.startswith('*') or 
+                                 line_stripped.startswith('-') or 
+                                 line_stripped.startswith('•') or
+                                 (len(line_stripped) > 2 and line_stripped[0].isdigit() and line_stripped[1] in '.)')):
+                # This might be an acceptance criterion
+                clean_line = line_stripped.lstrip('*-•0123456789.) ').strip()
+                if clean_line and len(clean_line) > 10:  # Avoid too short lines
+                    ac_bullets.append(clean_line)
+        
+        if ac_bullets:
+            result['acceptance_criteria'] = ac_bullets
+    
+    return result
+
+def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue_type, parsed_content):
+    """
+    Generate test cases using AWS Bedrock (Claude AI).
+    Falls back to rule-based generation if AI is unavailable.
+    """
+    if bedrock_runtime is None:
+        print("[WARNING] AWS Bedrock not available, falling back to rule-based generation", flush=True)
+        return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
+    
+    try:
+        # Build the AI prompt
+        prompt = build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content)
+        
+        # Call Claude via AWS Bedrock
+        print(f"[INFO] Calling Claude AI for test case generation...", flush=True)
+        
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 4000,
+            "temperature": 0.7,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        }
+        
+        response = bedrock_runtime.invoke_model(
+            modelId=BEDROCK_MODEL_ID,
+            body=json.dumps(request_body)
+        )
+        
+        response_body = json.loads(response['body'].read())
+        test_cases = response_body['content'][0]['text']
+        
+        print(f"[INFO] Successfully generated AI test cases", flush=True)
+        return test_cases
+        
+    except ClientError as e:
+        print(f"[ERROR] AWS Bedrock error: {e}", flush=True)
+        return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
+    except Exception as e:
+        print(f"[ERROR] Unexpected error in AI generation: {e}", flush=True)
+        return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
+
+def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content):
+    """
+    Build an intelligent prompt for Claude AI to generate test cases.
+    """
+    has_ac = len(parsed_content['acceptance_criteria']) > 0
+    has_user_stories = len(parsed_content['user_stories']) > 0
+    has_business_rules = len(parsed_content['business_rules']) > 0
+    has_google_drive = len(parsed_content['google_drive_links']) > 0
+    
+    prompt = f"""You are an expert QA engineer at HelloFresh. Generate comprehensive test cases in Cucumber/Gherkin format for the following ticket:
+
+**Ticket:** {ticket_key}
+**Type:** {issue_type}
+**Summary:** {summary}
+
+**Description:**
+{description[:1500]}
+
+"""
+    
+    # Add parsed content if available
+    if has_ac:
+        prompt += f"\n**Acceptance Criteria Found:**\n"
+        for idx, ac in enumerate(parsed_content['acceptance_criteria'][:10], 1):
+            prompt += f"{idx}. {ac}\n"
+    
+    if has_user_stories:
+        prompt += f"\n**User Stories Found:**\n"
+        for idx, story in enumerate(parsed_content['user_stories'][:5], 1):
+            prompt += f"{idx}. {story}\n"
+    
+    if has_business_rules:
+        prompt += f"\n**Business Rules Found:**\n"
+        for idx, rule in enumerate(parsed_content['business_rules'][:5], 1):
+            prompt += f"{idx}. {rule}\n"
+    
+    if has_google_drive:
+        prompt += f"\n**Referenced Documents:**\n"
+        for link in parsed_content['google_drive_links']:
+            prompt += f"- {link}\n"
+    
+    prompt += """
+
+**Requirements:**
+1. Generate test cases in proper Cucumber/Gherkin format
+2. Include a Feature description with context
+3. Create test scenarios for:
+   - **Acceptance Criteria Tests** (if provided) - One scenario per criterion with @AC tags
+   - **Happy Path** - The ideal user journey (@happy_path @smoke)
+   - **Critical Path** - Essential business flows (@critical_path)
+   - **Edge Cases** - Boundary conditions and special scenarios (@edge_case)
+   - **Sad Path** - Error handling and validation (@sad_path @validation)
+   - **Regression** - Ensure no side effects (@regression)
+4. Use Given/When/Then format
+5. Add appropriate tags (@priority_critical, @priority_high, @priority_medium)
+6. Consider multi-platform scenarios (iOS/Android/Web) where relevant
+7. Include Scenario Outlines with Examples for data-driven tests
+8. Add comments with context where helpful
+
+**Platform Context:** This is for HelloFresh's Loyalty & Virality tribe
+
+Generate comprehensive, production-ready test cases that a QA engineer can immediately use."""
+    
+    return prompt
+
+def generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content):
+    """
+    Fallback rule-based test case generation (original logic).
+    Used when AI is unavailable.
+    """
+    
+    has_ac = len(parsed_content['acceptance_criteria']) > 0
+    has_user_stories = len(parsed_content['user_stories']) > 0
+    has_business_rules = len(parsed_content['business_rules']) > 0
+    has_google_drive = len(parsed_content['google_drive_links']) > 0
+    
+    # Extract key words for feature name
+    feature_name = summary[:80] if len(summary) <= 80 else summary[:77] + "..."
+    
+    gherkin_output = f"""Feature: {feature_name}
+  As a user
+  I want to verify the functionality described in {ticket_key}
+  So that the system behaves as expected
+
+"""
+    
+    # Add note about sources
+    if has_ac or has_user_stories or has_business_rules or has_google_drive:
+        gherkin_output += "  # ═══════════════════════════════════════════════════════════════\n"
+        gherkin_output += "  # Test cases generated from:\n"
+        if has_ac:
+            gherkin_output += f"  #   ✓ {len(parsed_content['acceptance_criteria'])} Acceptance Criteria found\n"
+        if has_user_stories:
+            gherkin_output += f"  #   ✓ {len(parsed_content['user_stories'])} User Stories found\n"
+        if has_business_rules:
+            gherkin_output += f"  #   ✓ {len(parsed_content['business_rules'])} Business Rules found\n"
+        if has_google_drive:
+            gherkin_output += f"  #   ✓ {len(parsed_content['google_drive_links'])} Google Drive link(s) found\n"
+            for link in parsed_content['google_drive_links']:
+                gherkin_output += f"  #     → {link}\n"
+        gherkin_output += "  # ═══════════════════════════════════════════════════════════════\n\n"
+    
+    gherkin_output += """  Background:
+    Given the system is in a stable state
+    And all prerequisites are met
+    And test data is prepared
+
+"""
+    
+    # ACCEPTANCE CRITERIA BASED TESTS
+    if has_ac:
+        gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# ACCEPTANCE CRITERIA - Tests from ticket AC
+# ═══════════════════════════════════════════════════════════════
+
+"""
+        for idx, ac in enumerate(parsed_content['acceptance_criteria'], 1):
+            # Clean up the AC text
+            ac_clean = ac.replace('\n', ' ').strip()
+            if len(ac_clean) > 100:
+                ac_clean = ac_clean[:97] + "..."
+            
+            gherkin_output += f"""  @acceptance_criteria @priority_critical @AC{idx}
+  Scenario: Verify AC{idx}: {ac_clean}
+    Given the preconditions for this acceptance criterion are met
+    When the user performs the actions described in AC{idx}
+    Then the expected outcome should be observed
+    And the acceptance criterion should be fully satisfied
+
+"""
+    
+    # USER STORY BASED TESTS
+    if has_user_stories:
+        gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# USER STORY - Tests from user story
+# ═══════════════════════════════════════════════════════════════
+
+"""
+        for idx, story in enumerate(parsed_content['user_stories'], 1):
+            gherkin_output += f"""  @user_story @priority_high @US{idx}
+  Scenario: Verify user story fulfillment
+    # User Story: {story.replace(chr(10), ' ')[:150]}
+    Given I am the user described in the story
+    When I perform the actions needed to achieve my goal
+    Then I should be able to accomplish what is described
+    And the user story should be fulfilled
+
+"""
+    
+    # BUSINESS RULES
+    if has_business_rules:
+        gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# BUSINESS RULES - Tests from business rules
+# ═══════════════════════════════════════════════════════════════
+
+"""
+        for idx, rule in enumerate(parsed_content['business_rules'], 1):
+            rule_clean = rule.replace('\n', ' ').strip()[:100]
+            gherkin_output += f"""  @business_rule @priority_high @BR{idx}
+  Scenario: Verify business rule {idx}
+    # Rule: {rule_clean}
+    Given the business context is established
+    When the business rule is evaluated
+    Then the system should enforce the rule correctly
+    And no violations should occur
+
+"""
+    
+    # HAPPY PATH
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# HAPPY PATH - Ideal User Journey
+# ═══════════════════════════════════════════════════════════════
+
+  @happy_path @smoke @priority_high
+  Scenario: Verify successful completion of main user flow
+    Given the user is on the application
+    When the user performs the expected actions
+    Then the system should respond correctly
+    And all expected elements should be displayed
+    And no errors should occur
+
+"""
+    
+    # CRITICAL PATH
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# CRITICAL PATH - Essential Business Flows
+# ═══════════════════════════════════════════════════════════════
+
+"""
+    
+    if issue_type == 'Bug':
+        gherkin_output += f"""  @critical_path @bug_verification @priority_critical
+  Scenario: Verify the reported bug is reproducible
+    Given the system is in the state described in the bug report
+    When the user follows the steps to reproduce from {ticket_key}
+    Then the issue described should be observable
+    And all symptoms should match the bug description
+
+  @critical_path @bug_fix @priority_critical
+  Scenario: Verify the bug fix resolves the issue
+    Given the bug fix has been applied
+    When the user performs the same actions that previously caused the bug
+    Then the bug should no longer occur
+    And the system should behave as expected
+    And no new issues should be introduced
+
+"""
+    else:
+        gherkin_output += f"""  @critical_path @feature_verification @priority_critical
+  Scenario: Verify the core functionality works as specified
+    Given the new feature has been implemented
+    When the user accesses the feature
+    Then the feature should work as described in {ticket_key}
+    And all acceptance criteria should be met
+
+"""
+    
+    # EDGE CASES
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# EDGE CASES - Boundary Conditions & Special Scenarios
+# ═══════════════════════════════════════════════════════════════
+
+  @edge_case @boundary @priority_medium
+  Scenario Outline: Verify handling of edge cases
+    Given the user enters <edge_case_data>
+    When the user submits the data
+    Then the system should handle it gracefully
+    And display appropriate feedback
+
+    Examples:
+      | edge_case_data              |
+      | empty values                |
+      | maximum length strings      |
+      | special characters          |
+      | unicode and emojis          |
+
+"""
+    
+    # SAD PATH
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# SAD PATH - Error Handling & Negative Scenarios
+# ═══════════════════════════════════════════════════════════════
+
+  @sad_path @validation @priority_high
+  Scenario: Verify validation for invalid input
+    Given the user is on the form
+    When the user submits invalid or missing data
+    Then the system should display validation errors
+    And prevent incorrect data from being processed
+    And show clear error messages to guide the user
+
+  @sad_path @error_handling @priority_medium
+  Scenario: Verify graceful error handling
+    Given an error condition occurs
+    When the system encounters the error
+    Then the user should see a friendly error message
+    And the system should not crash or expose sensitive information
+    And the user should be able to recover or retry
+
+"""
+    
+    # REGRESSION
+    gherkin_output += """# ═══════════════════════════════════════════════════════════════
+# REGRESSION - Ensure No Side Effects
+# ═══════════════════════════════════════════════════════════════
+
+  @regression @priority_high
+  Scenario: Verify related features still work correctly
+    Given the changes from this ticket are live
+    When the user accesses related features
+    Then all related functionality should work as before
+    And no regressions should be introduced
+    And performance should not degrade
+
+"""
+    
+    return gherkin_output
     """
     Generate test cases in Cucumber Gherkin format.
     Organized by: Happy Path, Critical Path, Edge Cases, and Sad Path.

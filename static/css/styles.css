@@ -651,6 +651,17 @@ main label {
 
 main .help-text {
     color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+}
+
+main .help-text code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    color: var(--hf-green);
+    font-weight: 500;
 }
 
 main .required {

@@ -7,11 +7,13 @@ A simple, user-friendly bug reporting tool that automatically checks for duplica
 - 🎯 **Simple Interface** - Clean, intuitive form for reporting bugs
 - 🔍 **Automatic Duplicate Detection** - AI-powered search to find similar bugs before creating
 - ✅ **Direct Jira Integration** - Creates bugs under Epic REW-323 automatically
+- 🤖 **AI Test Case Generator** - Claude AI generates comprehensive Cucumber/Gherkin test cases from JIRA tickets or Google Docs
 - 📊 **Dashboard** - View bug statistics, trends, and metrics
 - 📈 **Charts** - 10-day creation trend visualization
 - 🚀 **Easy Setup** - One command to get started
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🌓 **Dark Mode** - Automatic theme switching
+- 💬 **Slack Integration** - Automatic notifications to team channels
 
 ---
 
@@ -42,8 +44,18 @@ That's it! The setup script will:
 Edit `.env` and add your credentials:
 
 ```bash
+# Required: Jira Configuration
 JIRA_EMAIL=your.email@hellofresh.com
 JIRA_API_TOKEN=your_token_here
+
+# Optional: AWS Bedrock for AI Test Case Generation
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+
+# Optional: Slack Integration
+SLACK_WEBHOOK_URL=your_webhook_url
 ```
 
 ### Start the Application
@@ -101,6 +113,94 @@ python app.py
 ```
 
 Visit: **http://localhost:5000**
+
+---
+
+## 🤖 AI Test Case Generator (AWS Bedrock + Claude)
+
+The tool includes an AI-powered test case generator that creates comprehensive Cucumber/Gherkin test scenarios from JIRA tickets or Google Drive documents.
+
+### Setup AWS Bedrock
+
+To enable AI test case generation, configure AWS Bedrock in your `.env`:
+
+```bash
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=us-east-1  # or your preferred region
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+```
+
+### Getting AWS Credentials
+
+**Option 1: HelloFresh Enterprise (Recommended)**
+- Contact your DevOps/Platform team to get AWS credentials with Bedrock access
+- HelloFresh likely has an enterprise AWS account with Bedrock enabled
+- This ensures compliance and cost tracking
+
+**Option 2: AWS IAM User**
+1. Log into AWS Console
+2. Go to IAM → Users → Create User
+3. Attach policy: `AmazonBedrockFullAccess`
+4. Create access keys
+5. Copy the Access Key ID and Secret Access Key
+
+### Enable Claude Model in Bedrock
+
+1. Go to AWS Console → Amazon Bedrock
+2. Navigate to **Model access** (in left sidebar)
+3. Click **Manage model access**
+4. Enable **Anthropic Claude** models:
+   - `Claude 3.5 Sonnet` (recommended - best quality)
+   - `Claude 3 Sonnet` (alternative)
+5. Submit request (usually instant approval)
+
+### Supported Input Sources
+
+The AI generator accepts:
+
+1. **JIRA Tickets**
+   - Full URL: `https://hellofresh.atlassian.net/browse/REW-123`
+   - Ticket key: `REW-123`
+
+2. **Google Drive Documents**
+   - Google Docs URL: `https://docs.google.com/document/d/...`
+   - Document must be shared with "Anyone with the link"
+
+### What the AI Generates
+
+Claude AI analyzes the ticket/document and creates:
+
+- ✅ **Acceptance Criteria Tests** - One scenario per AC found (tagged @AC1, @AC2, etc.)
+- ✅ **User Story Tests** - Validates user story fulfillment
+- ✅ **Business Rule Tests** - Ensures rules are enforced
+- ✅ **Happy Path** - Ideal user journey (@happy_path @smoke)
+- ✅ **Critical Path** - Essential business flows (@critical_path)
+- ✅ **Edge Cases** - Boundary conditions (@edge_case)
+- ✅ **Sad Path** - Error handling and validation (@sad_path)
+- ✅ **Regression** - Side effect prevention (@regression)
+- ✅ **Scenario Outlines** - Data-driven test examples
+- ✅ **Multi-platform scenarios** - iOS/Android/Web where relevant
+
+### Intelligent Parsing
+
+The AI automatically detects and extracts:
+- Acceptance Criteria sections
+- User Stories (As a/I want/So that format)
+- Business Rules
+- Google Drive links embedded in tickets
+- Bullet points as potential criteria
+
+### Fallback Mode
+
+If AWS Bedrock is not configured or unavailable, the system automatically falls back to rule-based test case generation. Your tool will still work, just with simpler test scenarios.
+
+### Cost Estimation
+
+AWS Bedrock pricing (approximate):
+- Claude 3.5 Sonnet: ~$0.003-0.015 per test case generation
+- Very affordable for enterprise use
+- Much cheaper than manual test case writing
 
 ---
 

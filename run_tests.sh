@@ -5,11 +5,13 @@ set -e
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
 print_info() { echo -e "${BLUE}ℹ${NC} $1"; }
+print_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 
 echo ""
 echo "🧪 Running Tests..."
@@ -46,13 +48,21 @@ fi
 # Check JavaScript syntax
 print_info "Checking JavaScript syntax..."
 if command -v node &> /dev/null 2>&1; then
-    if node -c static/js/app.js 2>/dev/null; then
-        print_success "JavaScript syntax check passed!"
-        echo ""
+    # Check if Node.js can even run (detect library issues)
+    if node --version &>/dev/null; then
+        # Node works, now check syntax
+        if node -c static/js/app.js 2>/dev/null; then
+            print_success "JavaScript syntax check passed!"
+            echo ""
+        else
+            # Real syntax error
+            print_error "JavaScript syntax errors found!"
+            exit 1
+        fi
     else
-        # Node exists but syntax check failed
-        print_error "JavaScript syntax errors found!"
-        exit 1
+        # Node crashed (library issue like libicui18n), skip check
+        print_warning "Node.js environment issue detected, skipping JavaScript syntax check"
+        echo ""
     fi
 else
     print_warning "Node.js not available, skipping JavaScript syntax check"
