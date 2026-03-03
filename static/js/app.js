@@ -839,8 +839,12 @@ function renderCreationTrendChart(creationTrend) {
     
     // Detect theme
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const textColor = isDark ? '#e2e8f0' : '#1e293b';
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const textColor = isDark ? '#e2e8f0' : '#333333';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1);
+    
+    // HelloFresh brand colors
+    const hfGreen = '#91C933';
+    const hfGreenLight = 'rgba(145, 201, 51, 0.1)';
     
     creationTrendChartInstance = new Chart(ctx, {
         type: 'line',
@@ -849,14 +853,14 @@ function renderCreationTrendChart(creationTrend) {
             datasets: [{
                 label: 'Bugs Created',
                 data: data,
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: hfGreen,
+                backgroundColor: hfGreenLight,
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
                 pointRadius: 5,
                 pointHoverRadius: 7,
-                pointBackgroundColor: '#667eea',
+                pointBackgroundColor: hfGreen,
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2
             }]

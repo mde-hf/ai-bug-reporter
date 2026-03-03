@@ -5,41 +5,53 @@
 }
 
 :root {
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
+    /* HelloFresh Brand Colors */
+    --hf-green: #91C933;
+    --hf-green-dark: #7AB028;
+    --hf-green-light: #A5D959;
+    --hf-orange: #FF6B35;
+    --hf-dark: #333333;
+    --hf-light: #F7F7F7;
+    
+    /* Primary colors using HelloFresh brand */
+    --primary-color: #91C933;
+    --primary-hover: #7AB028;
     --secondary-color: #64748b;
     --secondary-hover: #475569;
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --danger-color: #ef4444;
-    --background: #f8fafc;
+    --success-color: #91C933;
+    --warning-color: #FF6B35;
+    --danger-color: #dc2626;
+    --background: #F7F7F7;
     --surface: #ffffff;
     --border: #e2e8f0;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
+    --text-primary: #333333;
+    --text-secondary: #666666;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --card-bg: #ffffff;
 }
 
 [data-theme="dark"] {
-    --primary-color: #3b82f6;
-    --primary-hover: #2563eb;
+    /* HelloFresh Dark Mode */
+    --primary-color: #A5D959;
+    --primary-hover: #91C933;
     --secondary-color: #94a3b8;
     --secondary-hover: #cbd5e1;
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
+    --success-color: #91C933;
+    --warning-color: #FF6B35;
     --danger-color: #ef4444;
-    --background: #0f172a;
-    --surface: #1e293b;
-    --border: #334155;
+    --background: #1a1a1a;
+    --surface: #2a2a2a;
+    --border: #404040;
     --text-primary: #f1f5f9;
     --text-secondary: #94a3b8;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --card-bg: #2a2a2a;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--background);
     color: var(--text-primary);
     line-height: 1.6;
@@ -129,9 +141,9 @@ header {
 }
 
 .tab-button.active {
-    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    background: var(--hf-green);
     color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(145, 201, 51, 0.3);
 }
 
 .tab-content {
@@ -155,10 +167,10 @@ header {
 }
 
 .dashboard {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #91C933 0%, #7AB028 100%);
     padding: 2.5rem;
     border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 60px rgba(145, 201, 51, 0.2);
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
@@ -228,7 +240,7 @@ header {
     left: 0;
     width: 100%;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), #764ba2);
+    background: linear-gradient(90deg, var(--hf-green), var(--hf-green-dark));
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.3s ease;
@@ -322,7 +334,7 @@ header {
 
 .stat-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), #764ba2);
+    background: linear-gradient(90deg, var(--hf-green), var(--hf-green-dark));
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -359,7 +371,7 @@ header {
 }
 
 .platform-tag .count {
-    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    background: var(--hf-green);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -438,7 +450,7 @@ header {
 }
 
 .priority-status-matrix thead th {
-    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    background: var(--hf-green);
     color: white;
     font-weight: 600;
     position: sticky;
@@ -535,7 +547,7 @@ header {
 }
 
 [data-theme="dark"] .dashboard {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    background: linear-gradient(135deg, #7AB028 0%, #6A9D20 100%);
 }
 
 [data-theme="dark"] .stat-card,
