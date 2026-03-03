@@ -25,7 +25,30 @@
 
         <div id="reportTab" class="tab-content active">
             <main>
+            <div id="wipScreen" class="wip-screen" style="display: none;">
+                <div class="wip-content">
+                    <div class="wip-icon">🚧</div>
+                    <h2>Work In Progress</h2>
+                    <p>Bug reporting for <span id="wipSquadName"></span> is coming soon!</p>
+                    <p class="wip-subtitle">Please check back later or contact your squad lead for assistance.</p>
+                    <button type="button" class="btn btn-secondary" onclick="resetSquadSelection()">← Back to Squad Selection</button>
+                </div>
+            </div>
+
             <form id="bugForm">
+                <div class="form-group">
+                    <label for="squad">Select Your Squad <span class="required">*</span></label>
+                    <select id="squad" name="squad" required>
+                        <option value="">-- Choose a squad --</option>
+                        <option value="loyalty-mission">Loyalty Mission Squad</option>
+                        <option value="virality">Virality Squad</option>
+                        <option value="rewards">Rewards Squad</option>
+                        <option value="loyalty-2.0">Loyalty 2.0 Bug Reporting</option>
+                    </select>
+                    <div class="help-text">Select the squad you're reporting a bug for</div>
+                </div>
+
+                <div id="bugFormFields" style="display: none;">
                 <div class="form-group">
                     <label for="title">Bug Title <span class="required">*</span></label>
                     <input type="text" id="title" name="title" required 
@@ -103,6 +126,7 @@
                         <span class="btn-text">✅ Create Bug Report</span>
                         <span class="btn-loader"></span>
                     </button>
+                </div>
                 </div>
             </form>
 

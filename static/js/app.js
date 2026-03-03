@@ -6,9 +6,49 @@ const duplicatesList = document.getElementById('duplicatesList');
 const resultSection = document.getElementById('result');
 const attachmentsInput = document.getElementById('attachments');
 const filePreview = document.getElementById('filePreview');
+const squadSelect = document.getElementById('squad');
+const bugFormFields = document.getElementById('bugFormFields');
+const wipScreen = document.getElementById('wipScreen');
 
 // Store selected files
 let selectedFiles = [];
+
+// Squad selection handler
+squadSelect.addEventListener('change', function() {
+    const selectedSquad = this.value;
+    
+    if (!selectedSquad) {
+        bugFormFields.style.display = 'none';
+        wipScreen.style.display = 'none';
+        return;
+    }
+    
+    if (selectedSquad === 'loyalty-2.0') {
+        // Show the bug form for Loyalty 2.0
+        bugFormFields.style.display = 'block';
+        wipScreen.style.display = 'none';
+    } else {
+        // Show WIP screen for other squads
+        bugFormFields.style.display = 'none';
+        wipScreen.style.display = 'block';
+        
+        // Set squad name in WIP message
+        const squadNames = {
+            'loyalty-mission': 'Loyalty Mission Squad',
+            'virality': 'Virality Squad',
+            'rewards': 'Rewards Squad'
+        };
+        document.getElementById('wipSquadName').textContent = squadNames[selectedSquad];
+    }
+});
+
+// Function to reset squad selection
+function resetSquadSelection() {
+    squadSelect.value = '';
+    bugFormFields.style.display = 'none';
+    wipScreen.style.display = 'none';
+    squadSelect.focus();
+}
 
 // Get form data
 function getFormData() {
