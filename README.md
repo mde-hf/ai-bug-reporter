@@ -1,31 +1,73 @@
-# AI Bug Reporter
+# Bug Reporter
 
-A simple, user-friendly bug reporting tool that automatically checks for duplicate tickets before creating new ones in Jira. Built as a simpler alternative to direct JIRA interaction.
+A simple, user-friendly bug reporting tool that automatically checks for duplicate tickets before creating new ones in Jira. Built for the Loyalty & Virality tribe at HelloFresh.
 
-## Features
+## ✨ Features
 
 - 🎯 **Simple Interface** - Clean, intuitive form for reporting bugs
 - 🔍 **Automatic Duplicate Detection** - AI-powered search to find similar bugs before creating
 - ✅ **Direct Jira Integration** - Creates bugs under Epic REW-323 automatically
-- 🚀 **Easy to Share** - Web-based, accessible to your entire team
+- 📊 **Dashboard** - View bug statistics, trends, and metrics
+- 📈 **Charts** - 10-day creation trend visualization
+- 🚀 **Easy Setup** - One command to get started
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
+- 🌓 **Dark Mode** - Automatic theme switching
 
-## Setup Instructions
+---
 
-### Prerequisites
+## 🚀 Quick Start (One Command!)
 
-- Python 3.8 or higher
-- A Jira account with API access
-- Access to HelloFresh Jira workspace
+```bash
+git clone https://github.com/mde-hf/ai-bug-reporter.git
+cd ai-bug-reporter
+./setup.sh
+```
 
-### 1. Get Your Jira API Token
+That's it! The setup script will:
+- ✅ Check Python installation
+- ✅ Create virtual environment
+- ✅ Install all dependencies
+- ✅ Create .env file from template
+- ✅ Set up necessary directories
+
+### Get Your Jira API Token
 
 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click "Create API token"
 3. Give it a name (e.g., "Bug Reporter")
-4. Copy the token (you won't see it again!)
+4. Copy the token
 
-### 2. Install Dependencies
+### Configure Your .env
+
+Edit `.env` and add your credentials:
+
+```bash
+JIRA_EMAIL=your.email@hellofresh.com
+JIRA_API_TOKEN=your_token_here
+```
+
+### Start the Application
+
+```bash
+./start.sh
+```
+
+Visit: **http://localhost:5000**
+
+---
+
+## 📋 Manual Setup (Alternative)
+
+If you prefer manual setup:
+
+### Prerequisites
+
+- Python 3.8 or higher
+- pip3
+- A Jira account with API access
+- Access to HelloFresh Jira workspace
+
+### 1. Install Dependencies
 
 ```bash
 # Create a virtual environment (recommended)
@@ -36,17 +78,94 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 
 ```bash
 # Copy the example environment file
 cp .env.example .env
 
 # Edit .env with your details
-# Required:
-JIRA_EMAIL=your.email@hellofresh.com
-JIRA_API_TOKEN=your_token_from_step_1
+nano .env
 ```
+
+Required variables:
+```
+JIRA_EMAIL=your.email@hellofresh.com
+JIRA_API_TOKEN=your_token_here
+```
+
+### 3. Run the Application
+
+```bash
+python app.py
+```
+
+Visit: **http://localhost:5000**
+
+---
+
+## 📁 Project Structure
+
+```
+bug-reporter/
+├── app.py                 # Flask backend
+├── templates/
+│   └── index.html        # Main UI
+├── static/
+│   ├── css/
+│   │   └── styles.css    # Styling
+│   └── js/
+│       └── app.js        # Frontend logic
+├── setup.sh              # One-command setup
+├── start.sh              # Start application
+├── requirements.txt      # Python dependencies
+├── .env.example          # Environment template
+└── README.md            # This file
+```
+
+---
+
+## 🎮 Usage
+
+### Reporting a Bug
+
+1. Select your **Project** (currently only Loyalty 2.0 is active)
+2. Enter **Bug Title**
+3. Auto-duplicate detection runs as you type
+4. Fill in:
+   - Description
+   - Steps to Reproduce
+   - Expected vs Actual Behavior
+   - Environment (Staging/Production/Local)
+   - Priority (Low/Medium/High/Critical)
+5. Optionally attach screenshots/videos
+6. Click **Create Bug Report**
+
+### Dashboard
+
+1. Click the **📊 Dashboard** tab
+2. Select **Loyalty 2.0 Bug Reporting** from dropdown
+3. View:
+   - Total bugs, open/resolved counts
+   - Priority × Status matrix
+   - 10-day creation trend chart
+   - Platform breakdown (iOS/Android/Web)
+   - Resolution metrics
+
+---
+
+## 🌐 Deployment
+
+This app is ready for Vercel deployment. See [DEPLOYMENT.md](DEPLOYMENT.md) for instructions.
+
+Quick deploy:
+```bash
+npx vercel
+```
+
+---
+
+## 🛠️ Troubleshooting
 
 ### 4. Run the Application
 
