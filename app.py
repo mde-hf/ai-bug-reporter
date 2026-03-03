@@ -1247,269 +1247,149 @@ def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_
 
 # Your Task
 
-Generate production-ready test cases in Cucumber/Gherkin format. Analyze the ticket description carefully, especially:
-- **Issue Description**: Understand what the problem/feature is
-- **Acceptance Criteria** (if present): CREATE A DEDICATED TEST SCENARIO FOR EACH ONE
-- **Steps to Reproduce**: Use these as a basis for test scenarios
-- **Expected vs Actual Behavior**: Define clear assertions
-- **Environment**: Consider platform-specific scenarios
+Generate production-ready test cases in Cucumber/Gherkin format based ONLY on the specific requirements in this ticket. 
+
+**CRITICAL RULES:**
+- DO NOT generate generic placeholder tests
+- Every scenario must be directly related to the ticket content
+- Be specific to the actual feature/bug described
+- Use real values and contexts from the ticket
+
+Analyze the ticket description carefully:
+- **Issue Description**: What specific problem/feature is this?
+- **Acceptance Criteria** (if present): Test EXACTLY what each criterion states
+- **Steps to Reproduce**: Use the actual steps from the ticket
+- **Expected vs Actual Behavior**: Test the specific behaviors mentioned
+- **Environment**: Consider the actual platform mentioned
 
 # Test Case Requirements
 
-1. **Feature description** with clear context
+1. **Feature description** 
+   - Describe the SPECIFIC feature/bug from this ticket
+   - Reference the ticket ID and summary
 
-2. **Background** section if there are common preconditions
+2. **Background** (only if needed)
+   - Include ONLY if there are common preconditions mentioned in the ticket
+   - Be specific to this feature/bug
 
-3. **CRITICAL: Acceptance Criteria Tests (if provided above)**
+3. **PRIORITY: Acceptance Criteria Tests (if provided)**
    - Create ONE detailed scenario for EACH acceptance criterion
-   - Use the exact criterion text in the scenario name
-   - Tag each with @acceptance_criteria @AC1, @AC2, etc.
-   - Make these tests @priority_critical
-   - Be specific and directly test what the criterion states
+   - Use the EXACT wording from the criterion
+   - Tag: @acceptance_criteria @AC1, @AC2, etc. @priority_critical
+   - Steps must directly test what the criterion states
+   - NO generic placeholders
 
-4. **Additional test scenarios organized by priority:**
-   - **@critical** - Core functionality, must work
-   - **@high** - Important user flows
-   - **@medium** - Secondary features and edge cases
-   - **@low** - Nice-to-have validations
+4. **Additional relevant scenarios** (only if they relate to the ticket):
+   - **Happy Path** (@happy_path @smoke) - The ideal flow for THIS specific feature
+   - **Steps to Reproduce** (@bug_reproduction) - For bugs, reproduce the exact issue
+   - **Specific Edge Cases** (@edge_case) - ONLY edge cases relevant to THIS feature
+   - **Relevant Error Handling** (@sad_path) - ONLY errors specific to THIS feature
 
-5. **Include these test paths:**
-   - **Happy Path** (@happy_path @smoke) - Everything works perfectly
-   - **Critical Path** (@critical_path) - Essential business flows
-   - **Reproduction Path** (for bugs) - Reproduce the issue from the description
-   - **Edge Cases** (@edge_case) - Boundary conditions, special inputs
-   - **Error Handling** (@sad_path @validation) - Invalid inputs, error states
+5. **What NOT to include:**
+   - ❌ Generic "Scenario Outline: Verify handling of edge cases" with placeholder data
+   - ❌ Tests for "empty values", "special characters" unless the ticket mentions them
+   - ❌ Regression tests unless the ticket specifically requires them
+   - ❌ Platform-specific tests unless the ticket mentions specific platforms
+   - ❌ Any test that doesn't directly relate to the ticket requirements
 
-6. **Use proper Gherkin syntax:**
-   - Clear Given/When/Then steps
-   - Scenario Outlines with Examples for data-driven tests
-   - Meaningful scenario names that describe WHAT is being tested
-   - Appropriate tags for organization
+6. **Gherkin Quality:**
+   - Clear Given/When/Then with SPECIFIC steps from the ticket context
+   - Real values, not placeholders like "<edge_case_data>"
+   - Scenario names that describe WHAT is being tested in this specific case
+   - Only use Scenario Outline if the ticket suggests multiple similar test cases
 
-7. **Platform considerations:**
-   - If environment mentions iOS/Android/Web, include platform-specific scenarios
-   - Consider mobile vs desktop differences where relevant
-
-8. **Be specific and actionable:**
-   - Use concrete values and examples
-   - Make assertions verifiable
-   - Include enough detail for a QA engineer to execute
+7. **Be specific and contextual:**
+   - Reference actual features mentioned (e.g., "login page", "welcome screen")
+   - Use real user actions from the ticket
+   - Test actual expected outcomes described
+   - Include only details relevant to this ticket
 
 # Output Format
 
-Generate ONLY the Gherkin feature file content. Do not include any explanatory text before or after."""
+Generate ONLY the Gherkin feature file content for THIS SPECIFIC ticket. 
+No generic tests. No placeholder scenarios. Only what this ticket requires.
+Do not include any explanatory text before or after the Gherkin."""
     
     return prompt
 
 def generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content):
     """
-    Fallback rule-based test case generation (original logic).
-    Used when AI is unavailable.
+    Fallback rule-based test case generation.
+    Used when AI is unavailable. Generates focused tests only on found criteria.
     """
     
     has_ac = len(parsed_content['acceptance_criteria']) > 0
     has_user_stories = len(parsed_content['user_stories']) > 0
-    has_business_rules = len(parsed_content['business_rules']) > 0
-    has_google_drive = len(parsed_content['google_drive_links']) > 0
     
     # Extract key words for feature name
     feature_name = summary[:80] if len(summary) <= 80 else summary[:77] + "..."
     
-    gherkin_output = f"""Feature: {feature_name}
-  As a user
-  I want to verify the functionality described in {ticket_key}
-  So that the system behaves as expected
+    gherkin_output = f"""# NOTE: These tests were generated using fallback mode (AI unavailable)
+# For better, context-aware test cases, configure AWS Bedrock.
+
+Feature: {feature_name}
+  
+  Ticket: {ticket_key}
+  Type: {issue_type}
 
 """
     
-    # Add note about sources
-    if has_ac or has_user_stories or has_business_rules or has_google_drive:
-        gherkin_output += "  # ═══════════════════════════════════════════════════════════════\n"
-        gherkin_output += "  # Test cases generated from:\n"
-        if has_ac:
-            gherkin_output += f"  #   ✓ {len(parsed_content['acceptance_criteria'])} Acceptance Criteria found\n"
-        if has_user_stories:
-            gherkin_output += f"  #   ✓ {len(parsed_content['user_stories'])} User Stories found\n"
-        if has_business_rules:
-            gherkin_output += f"  #   ✓ {len(parsed_content['business_rules'])} Business Rules found\n"
-        if has_google_drive:
-            gherkin_output += f"  #   ✓ {len(parsed_content['google_drive_links'])} Google Drive link(s) found\n"
-            for link in parsed_content['google_drive_links']:
-                gherkin_output += f"  #     → {link}\n"
-        gherkin_output += "  # ═══════════════════════════════════════════════════════════════\n\n"
-    
-    gherkin_output += """  Background:
-    Given the system is in a stable state
-    And all prerequisites are met
-    And test data is prepared
-
-"""
-    
-    # ACCEPTANCE CRITERIA BASED TESTS
+    # ACCEPTANCE CRITERIA BASED TESTS (if available)
     if has_ac:
-        gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# ACCEPTANCE CRITERIA - Tests from ticket AC
-# ═══════════════════════════════════════════════════════════════
+        gherkin_output += """  # ═══════════════════════════════════════════════════════════════
+  # ACCEPTANCE CRITERIA TESTS
+  # ═══════════════════════════════════════════════════════════════
 
 """
         for idx, ac in enumerate(parsed_content['acceptance_criteria'], 1):
-            # Clean up the AC text
             ac_clean = ac.replace('\n', ' ').strip()
-            if len(ac_clean) > 100:
-                ac_clean = ac_clean[:97] + "..."
+            if len(ac_clean) > 80:
+                ac_clean = ac_clean[:77] + "..."
             
-            gherkin_output += f"""  @acceptance_criteria @priority_critical @AC{idx}
-  Scenario: Verify AC{idx}: {ac_clean}
-    Given the preconditions for this acceptance criterion are met
-    When the user performs the actions described in AC{idx}
-    Then the expected outcome should be observed
-    And the acceptance criterion should be fully satisfied
+            gherkin_output += f"""  @acceptance_criteria @AC{idx} @priority_critical
+  Scenario: {ac_clean}
+    Given the system is ready
+    When the acceptance criterion is evaluated
+    Then the requirement should be met
+    # TODO: Add specific steps based on: {ac[:100]}
 
 """
     
-    # USER STORY BASED TESTS
+    # USER STORY BASED TESTS (if available)
     if has_user_stories:
-        gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# USER STORY - Tests from user story
-# ═══════════════════════════════════════════════════════════════
+        gherkin_output += """  # ═══════════════════════════════════════════════════════════════
+  # USER STORY TESTS
+  # ═══════════════════════════════════════════════════════════════
 
 """
         for idx, story in enumerate(parsed_content['user_stories'], 1):
-            gherkin_output += f"""  @user_story @priority_high @US{idx}
-  Scenario: Verify user story fulfillment
-    # User Story: {story.replace(chr(10), ' ')[:150]}
-    Given I am the user described in the story
-    When I perform the actions needed to achieve my goal
-    Then I should be able to accomplish what is described
-    And the user story should be fulfilled
+            story_clean = story.replace('\n', ' ').strip()[:80]
+            gherkin_output += f"""  @user_story @US{idx} @priority_high
+  Scenario: Verify user story - {story_clean}
+    Given I am a user
+    When I follow the user story flow
+    Then I should achieve the desired outcome
+    # User Story: {story[:150]}
 
 """
     
-    # BUSINESS RULES
-    if has_business_rules:
-        gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# BUSINESS RULES - Tests from business rules
+    # If no structured criteria, add basic happy path
+    if not has_ac and not has_user_stories:
+        gherkin_output += f"""  @happy_path @smoke
+  Scenario: Basic functionality test for {ticket_key}
+    Given the feature/fix from {ticket_key} is implemented
+    When I use the feature as intended
+    Then it should work as expected
+    
+    # TODO: Add specific test steps based on ticket description:
+    # {description[:200]}
+
+"""
+    
+    gherkin_output += """
 # ═══════════════════════════════════════════════════════════════
-
-"""
-        for idx, rule in enumerate(parsed_content['business_rules'], 1):
-            rule_clean = rule.replace('\n', ' ').strip()[:100]
-            gherkin_output += f"""  @business_rule @priority_high @BR{idx}
-  Scenario: Verify business rule {idx}
-    # Rule: {rule_clean}
-    Given the business context is established
-    When the business rule is evaluated
-    Then the system should enforce the rule correctly
-    And no violations should occur
-
-"""
-    
-    # HAPPY PATH
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# HAPPY PATH - Ideal User Journey
+# Configure AWS Bedrock for AI-generated, context-aware tests
 # ═══════════════════════════════════════════════════════════════
-
-  @happy_path @smoke @priority_high
-  Scenario: Verify successful completion of main user flow
-    Given the user is on the application
-    When the user performs the expected actions
-    Then the system should respond correctly
-    And all expected elements should be displayed
-    And no errors should occur
-
-"""
-    
-    # CRITICAL PATH
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# CRITICAL PATH - Essential Business Flows
-# ═══════════════════════════════════════════════════════════════
-
-"""
-    
-    if issue_type == 'Bug':
-        gherkin_output += f"""  @critical_path @bug_verification @priority_critical
-  Scenario: Verify the reported bug is reproducible
-    Given the system is in the state described in the bug report
-    When the user follows the steps to reproduce from {ticket_key}
-    Then the issue described should be observable
-    And all symptoms should match the bug description
-
-  @critical_path @bug_fix @priority_critical
-  Scenario: Verify the bug fix resolves the issue
-    Given the bug fix has been applied
-    When the user performs the same actions that previously caused the bug
-    Then the bug should no longer occur
-    And the system should behave as expected
-    And no new issues should be introduced
-
-"""
-    else:
-        gherkin_output += f"""  @critical_path @feature_verification @priority_critical
-  Scenario: Verify the core functionality works as specified
-    Given the new feature has been implemented
-    When the user accesses the feature
-    Then the feature should work as described in {ticket_key}
-    And all acceptance criteria should be met
-
-"""
-    
-    # EDGE CASES
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# EDGE CASES - Boundary Conditions & Special Scenarios
-# ═══════════════════════════════════════════════════════════════
-
-  @edge_case @boundary @priority_medium
-  Scenario Outline: Verify handling of edge cases
-    Given the user enters <edge_case_data>
-    When the user submits the data
-    Then the system should handle it gracefully
-    And display appropriate feedback
-
-    Examples:
-      | edge_case_data              |
-      | empty values                |
-      | maximum length strings      |
-      | special characters          |
-      | unicode and emojis          |
-
-"""
-    
-    # SAD PATH
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# SAD PATH - Error Handling & Negative Scenarios
-# ═══════════════════════════════════════════════════════════════
-
-  @sad_path @validation @priority_high
-  Scenario: Verify validation for invalid input
-    Given the user is on the form
-    When the user submits invalid or missing data
-    Then the system should display validation errors
-    And prevent incorrect data from being processed
-    And show clear error messages to guide the user
-
-  @sad_path @error_handling @priority_medium
-  Scenario: Verify graceful error handling
-    Given an error condition occurs
-    When the system encounters the error
-    Then the user should see a friendly error message
-    And the system should not crash or expose sensitive information
-    And the user should be able to recover or retry
-
-"""
-    
-    # REGRESSION
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# REGRESSION - Ensure No Side Effects
-# ═══════════════════════════════════════════════════════════════
-
-  @regression @priority_high
-  Scenario: Verify related features still work correctly
-    Given the changes from this ticket are live
-    When the user accesses related features
-    Then all related functionality should work as before
-    And no regressions should be introduced
-    And performance should not degrade
-
 """
     
     return gherkin_output
