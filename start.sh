@@ -42,6 +42,8 @@ print_success "Starting application on port 5000..."
 echo ""
 print_info "Visit: ${BLUE}http://localhost:5000${NC}"
 print_info "Press Ctrl+C to stop the server"
+print_info ""
+print_info "💡 Tip: Use ${GREEN}./monitor.sh${NC} for auto-restart on crash"
 echo ""
 
 python app.py

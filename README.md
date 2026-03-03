@@ -60,9 +60,23 @@ SLACK_WEBHOOK_URL=your_webhook_url
 
 ### Start the Application
 
+**Option 1: Normal Start**
+
 ```bash
 ./start.sh
 ```
+
+**Option 2: Auto-Restart Monitor (Recommended for Development)**
+
+```bash
+./monitor.sh
+```
+
+The monitor script will:
+- ✅ Start the Flask server
+- ✅ Check every 5 seconds if server is running
+- ✅ Automatically restart if it crashes
+- ✅ Show restart count and status
 
 Visit: **http://localhost:5000**
 
