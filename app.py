@@ -1,29 +1,46 @@
 #!/usr/bin/env python3
 """
-Simple AI Bug Reporting Tool
+AI Bug Reporting Tool for HelloFresh
 Checks for duplicate tickets before creating new ones in Jira.
 AI-powered test case generation using AWS Bedrock (Claude).
 """
 
 import os
 import json
+import sys
+import re
+import base64
+import urllib.parse
+import logging
+import traceback
+from collections import defaultdict
+from datetime import datetime, timedelta
+
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import requests
-from datetime import datetime
 from dotenv import load_dotenv
 import boto3
 from botocore.exceptions import ClientError
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
+
+# Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
+# Configuration Constants
 JIRA_BASE_URL = os.environ.get('JIRA_BASE_URL', 'https://hellofresh.atlassian.net')
-JIRA_CLOUD_ID = 'c563471e-8682-4abc-8fa9-5465b05abad5'  # HelloFresh cloud ID
+JIRA_CLOUD_ID = os.environ.get('JIRA_CLOUD_ID', 'c563471e-8682-4abc-8fa9-5465b05abad5')
 JIRA_API_BASE = f'https://api.atlassian.com/ex/jira/{JIRA_CLOUD_ID}'
 JIRA_EMAIL = os.environ.get('JIRA_EMAIL')
 JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
@@ -34,6 +51,14 @@ PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 BEDROCK_MODEL_ID = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
 
+# Application Constants
+MAX_DUPLICATES_TO_RETURN = 8
+SIMILARITY_THRESHOLD_MIN = 30
+SUBSTRING_MATCH_SCORE = 95
+HIGH_SIMILARITY_THRESHOLD = 80
+MEDIUM_SIMILARITY_THRESHOLD = 60
+LOW_SIMILARITY_THRESHOLD = 40
+
 # Initialize AWS Bedrock client
 try:
     bedrock_runtime = boto3.client(
@@ -42,9 +67,9 @@ try:
         aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
     )
-    print(f"[INFO] AWS Bedrock client initialized with model: {BEDROCK_MODEL_ID}", flush=True)
+    logger.info(f"AWS Bedrock client initialized with model: {BEDROCK_MODEL_ID}")
 except Exception as e:
-    print(f"[WARNING] Failed to initialize AWS Bedrock client: {e}", flush=True)
+    logger.warning(f"Failed to initialize AWS Bedrock client: {e}")
     bedrock_runtime = None
 
 def get_jira_headers():
@@ -57,7 +82,6 @@ def get_jira_headers():
 
 def get_basic_auth():
     """Get base64 encoded basic auth string."""
-    import base64
     credentials = f"{JIRA_EMAIL}:{JIRA_API_TOKEN}"
     return base64.b64encode(credentials.encode()).decode()
 
@@ -66,13 +90,9 @@ def search_duplicates(title, description):
     Search for potential duplicate bugs in Jira.
     Returns list of similar issues with emphasis on title matching.
     """
-    import sys
-    import urllib.parse
-    
-    print(f"\n[DEBUG] ===== SEARCHING FOR DUPLICATES =====", flush=True)
-    print(f"[DEBUG] Title: '{title}'", flush=True)
-    print(f"[DEBUG] Description: '{description}'", flush=True)
-    sys.stdout.flush()
+    logger.debug("===== SEARCHING FOR DUPLICATES =====")
+    logger.debug(f"Title: '{title}'")
+    logger.debug(f"Description: '{description}'")
     
     # Simple direct search - search for individual words to catch partial matches
     title_words = [w.strip() for w in title.split() if len(w.strip()) > 2]
@@ -85,7 +105,7 @@ def search_duplicates(title, description):
         word_queries = ' OR '.join([f'summary ~ "{word}"' for word in title_words])
         simple_jql = f'project = {PROJECT_KEY} AND type = Bug AND ({word_queries}) ORDER BY created DESC'
     
-    print(f"[DEBUG] JQL Query: {simple_jql}", flush=True)
+    logger.debug(f"JQL Query: {simple_jql}")
     sys.stdout.flush()
     
     all_results = []
@@ -94,7 +114,7 @@ def search_duplicates(title, description):
         # Use Atlassian Cloud API with proper /search/jql endpoint
         search_url = f'{JIRA_API_BASE}/rest/api/3/search/jql'
         
-        print(f"[DEBUG] API URL: {search_url}", flush=True)
+        logger.debug(f"API URL: {search_url}")
         sys.stdout.flush()
         
         response = requests.get(
@@ -107,13 +127,13 @@ def search_duplicates(title, description):
             }
         )
         
-        print(f"[DEBUG] Response status: {response.status_code}", flush=True)
+        logger.debug(f"Response status: {response.status_code}")
         sys.stdout.flush()
         
         if response.status_code == 200:
             result_data = response.json()
             issues = result_data.get('issues', [])
-            print(f"[DEBUG] Found {len(issues)} total issues", flush=True)
+            logger.debug(f"Found {len(issues)} total issues")
             sys.stdout.flush()
             
             for issue in issues:
@@ -122,10 +142,10 @@ def search_duplicates(title, description):
                 parent = issue['fields'].get('parent', {})
                 parent_key = parent.get('key', 'No parent') if parent else 'No parent'
                 
-                print(f"[DEBUG] Issue {key}: '{summary}' (Parent: {parent_key})", flush=True)
+                logger.debug(f"Issue {key}: '{summary}' (Parent: {parent_key})")
                 
                 similarity = calculate_similarity(title, description, issue)
-                print(f"[DEBUG] Similarity: {similarity}%", flush=True)
+                logger.debug(f"Similarity: {similarity}%")
                 
                 if similarity >= 30:
                     all_results.append({
@@ -139,29 +159,36 @@ def search_duplicates(title, description):
                 sys.stdout.flush()
         else:
             error_text = response.text[:500]
-            print(f"[DEBUG] Error response ({response.status_code}): {error_text}", flush=True)
+            logger.debug(f"Error response ({response.status_code}): {error_text}")
             sys.stdout.flush()
             
     except Exception as e:
-        print(f"[ERROR] Exception during search: {e}", flush=True)
-        import traceback
+        logger.error(f"Exception during search: {e}")
         traceback.print_exc()
-        sys.stdout.flush()
     
     # Sort by similarity score
     all_results.sort(key=lambda x: x['similarity'], reverse=True)
     
-    print(f"[DEBUG] Returning {len(all_results)} results", flush=True)
-    print(f"[DEBUG] ===== END SEARCH =====\n", flush=True)
+    logger.debug(f"Returning {len(all_results)} results")
+    logger.debug("===== END SEARCH =====")
     sys.stdout.flush()
     
     return all_results[:8]
 
 def extract_key_terms(title, description):
-    """Extract key terms from title and description."""
-    # Simple keyword extraction (can be enhanced with NLP)
-    import re
+    """
+    Extract meaningful keywords from title and description for search.
     
+    Filters out common stop words and returns up to 100 chars of keywords
+    from both title and description for use in JQL queries.
+    
+    Args:
+        title: Bug title string
+        description: Bug description string
+        
+    Returns:
+        dict: Contains 'title_keywords' and 'description_keywords' strings
+    """
     # Remove common words
     common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'is', 'are', 'was', 'were', 'be', 'been', 'being'}
     
@@ -184,8 +211,20 @@ def extract_key_terms(title, description):
 
 def calculate_similarity(title, description, issue):
     """
-    Calculate similarity score between input and existing issue.
-    Returns score between 0-100, with emphasis on title matching.
+    Calculate similarity score between input bug and existing Jira issue.
+    
+    Uses multiple strategies:
+    - Substring matching (95% if title is contained in summary)
+    - Word overlap with length-based weighting (longer words = higher score)
+    - Bigram/phrase matching for multi-word sequences
+    
+    Args:
+        title: Input bug title
+        description: Input bug description  
+        issue: Existing Jira issue dict with 'fields'
+        
+    Returns:
+        int: Similarity score 0-100, where 70+ indicates high similarity
     """
     issue_summary = issue['fields']['summary'].lower()
     issue_description = issue['fields'].get('description', '')
@@ -364,7 +403,7 @@ def create_bug_in_jira(title, description, steps_to_reproduce, expected_behavior
         # Use mapped priority or original if not in mapping
         jira_priority = priority_mapping.get(priority, priority)
         payload["fields"]["priority"] = {"name": jira_priority}
-        print(f"[DEBUG] Setting priority to: {jira_priority}", flush=True)
+        logger.debug(f"Setting priority to: {jira_priority}")
     
     try:
         response = requests.post(
@@ -409,15 +448,15 @@ def create_bug_in_jira(title, description, steps_to_reproduce, expected_behavior
                         )
                         
                         if transition_response.status_code in [200, 204]:
-                            print(f"[DEBUG] Issue {issue_key} transitioned to On Hold", flush=True)
+                            logger.debug(f"Issue {issue_key} transitioned to On Hold")
                         else:
-                            print(f"[DEBUG] Failed to transition to On Hold: {transition_response.status_code}", flush=True)
+                            logger.debug(f"Failed to transition to On Hold: {transition_response.status_code}")
                     else:
-                        print(f"[DEBUG] 'On Hold' transition not available for {issue_key}", flush=True)
+                        logger.debug(f"'On Hold' transition not available for {issue_key}")
                 else:
-                    print(f"[DEBUG] Failed to get transitions: {transitions_response.status_code}", flush=True)
+                    logger.debug(f"Failed to get transitions: {transitions_response.status_code}")
             except Exception as e:
-                print(f"[DEBUG] Error transitioning to On Hold: {e}", flush=True)
+                logger.debug(f"Error transitioning to On Hold: {e}")
             
             # Upload attachments if any
             if attachments:
@@ -443,13 +482,13 @@ def create_bug_in_jira(title, description, steps_to_reproduce, expected_behavior
                             
                             if attach_response.status_code in [200, 201]:
                                 uploaded_count += 1
-                                print(f"[DEBUG] Uploaded attachment: {file.filename}", flush=True)
+                                logger.debug(f"Uploaded attachment: {file.filename}")
                             else:
-                                print(f"[DEBUG] Failed to upload {file.filename}: {attach_response.text}", flush=True)
+                                logger.debug(f"Failed to upload {file.filename}: {attach_response.text}")
                         except Exception as e:
-                            print(f"[DEBUG] Error uploading {file.filename}: {e}", flush=True)
-                
-                print(f"[DEBUG] Uploaded {uploaded_count}/{len(attachments)} attachments", flush=True)
+                            logger.debug(f"Error uploading {file.filename}: {e}")
+                    
+                logger.debug(f"Uploaded {uploaded_count}/{len(attachments)} attachments")
             
             return {
                 'success': True,
@@ -476,10 +515,6 @@ def index():
 @app.route('/api/epic-stats', methods=['GET'])
 def get_epic_stats():
     """Get statistics for bugs under the epic."""
-    import sys
-    from collections import defaultdict
-    from datetime import datetime, timedelta
-    
     try:
         jql = f'parent = {EPIC_KEY} AND type = Bug ORDER BY created DESC'
         
@@ -596,8 +631,7 @@ def get_epic_stats():
         })
         
     except Exception as e:
-        print(f"[ERROR] Failed to get epic stats: {e}", flush=True)
-        import traceback
+        logger.error(f"Failed to get epic stats: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -705,8 +739,7 @@ def generate_test_cases():
         return handle_jira_test_cases(source_input)
         
     except Exception as e:
-        print(f"[ERROR] Test case generation failed: {e}", flush=True)
-        import traceback
+        logger.error(f"Test case generation failed: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -718,7 +751,7 @@ def handle_jira_test_cases(ticket_input):
         ticket_key = ticket_key.split('/browse/')[-1].split('?')[0]
     
     # Fetch ticket from JIRA
-    print(f"[INFO] Fetching JIRA ticket: {ticket_key}", flush=True)
+    logger.info(f"Fetching JIRA ticket: {ticket_key}")
     
     response = requests.get(
         f'{JIRA_API_BASE}/rest/api/3/issue/{ticket_key}',
@@ -764,7 +797,7 @@ def handle_google_drive_test_cases(drive_url):
     Handle test case generation from Google Drive link.
     Note: This requires the document to be publicly accessible or proper authentication.
     """
-    print(f"[INFO] Processing Google Drive link: {drive_url}", flush=True)
+    logger.info(f"Processing Google Drive link: {drive_url}")
     
     # Extract document ID from various Google Drive URL formats
     doc_id = None
@@ -1035,117 +1068,8 @@ def parse_ticket_content(description):
         
         # Check for Google Drive links anywhere
         if 'drive.google.com' in line or 'docs.google.com' in line:
-            import re
             urls = re.findall(r'https?://(?:drive|docs)\.google\.com[^\s]+', line)
             result['google_drive_links'].extend(urls)
-    
-    return result
-    """
-    Parse ticket description to extract:
-    - Acceptance Criteria
-    - User Stories
-    - Business Rules
-    - Google Drive links
-    """
-    desc_lower = description.lower()
-    
-    result = {
-        'acceptance_criteria': [],
-        'user_stories': [],
-        'business_rules': [],
-        'google_drive_links': [],
-        'raw_description': description
-    }
-    
-    # Split description into lines for parsing
-    lines = description.split('\n')
-    
-    # State tracking for section parsing
-    in_acceptance_criteria = False
-    in_user_story = False
-    in_business_rules = False
-    current_section = []
-    
-    for line in lines:
-        line_lower = line.lower().strip()
-        
-        # Check for section headers
-        if any(keyword in line_lower for keyword in ['acceptance criteria', 'acceptance criterion', 'ac:', 'a.c.']):
-            if current_section:
-                if in_user_story:
-                    result['user_stories'].append('\n'.join(current_section))
-                elif in_business_rules:
-                    result['business_rules'].append('\n'.join(current_section))
-            in_acceptance_criteria = True
-            in_user_story = False
-            in_business_rules = False
-            current_section = []
-            continue
-            
-        elif any(keyword in line_lower for keyword in ['user story', 'user stories', 'as a', 'as an']):
-            if current_section:
-                if in_acceptance_criteria:
-                    result['acceptance_criteria'].append('\n'.join(current_section))
-                elif in_business_rules:
-                    result['business_rules'].append('\n'.join(current_section))
-            in_user_story = True
-            in_acceptance_criteria = False
-            in_business_rules = False
-            current_section = []
-            if 'as a' in line_lower or 'as an' in line_lower:
-                current_section.append(line.strip())
-            continue
-            
-        elif any(keyword in line_lower for keyword in ['business rule', 'business rules', 'rules:']):
-            if current_section:
-                if in_acceptance_criteria:
-                    result['acceptance_criteria'].append('\n'.join(current_section))
-                elif in_user_story:
-                    result['user_stories'].append('\n'.join(current_section))
-            in_business_rules = True
-            in_acceptance_criteria = False
-            in_user_story = False
-            current_section = []
-            continue
-        
-        # Check for Google Drive links
-        if 'drive.google.com' in line or 'docs.google.com' in line:
-            import re
-            urls = re.findall(r'https?://(?:drive|docs)\.google\.com[^\s]+', line)
-            result['google_drive_links'].extend(urls)
-        
-        # Collect content for current section
-        if line.strip() and (in_acceptance_criteria or in_user_story or in_business_rules):
-            # Skip empty lines and section headers
-            if line.strip() and not line.strip().startswith('#'):
-                current_section.append(line.strip())
-    
-    # Add remaining section
-    if current_section:
-        if in_acceptance_criteria:
-            result['acceptance_criteria'].append('\n'.join(current_section))
-        elif in_user_story:
-            result['user_stories'].append('\n'.join(current_section))
-        elif in_business_rules:
-            result['business_rules'].append('\n'.join(current_section))
-    
-    # Also check for bullet points that might be acceptance criteria
-    if not result['acceptance_criteria']:
-        ac_bullets = []
-        for line in lines:
-            line_stripped = line.strip()
-            # Look for bullet points or numbered lists
-            if line_stripped and (line_stripped.startswith('*') or 
-                                 line_stripped.startswith('-') or 
-                                 line_stripped.startswith('•') or
-                                 (len(line_stripped) > 2 and line_stripped[0].isdigit() and line_stripped[1] in '.)')):
-                # This might be an acceptance criterion
-                clean_line = line_stripped.lstrip('*-•0123456789.) ').strip()
-                if clean_line and len(clean_line) > 10:  # Avoid too short lines
-                    ac_bullets.append(clean_line)
-        
-        if ac_bullets:
-            result['acceptance_criteria'] = ac_bullets
     
     return result
 
@@ -1155,7 +1079,7 @@ def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue
     Falls back to rule-based generation if AI is unavailable.
     """
     if bedrock_runtime is None:
-        print("[WARNING] AWS Bedrock not available, falling back to rule-based generation", flush=True)
+        logger.warning("AWS Bedrock not available, falling back to rule-based generation")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
     
     try:
@@ -1163,7 +1087,7 @@ def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue
         prompt = build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content)
         
         # Call Claude via AWS Bedrock
-        print(f"[INFO] Calling Claude AI for test case generation...", flush=True)
+        logger.info("Calling Claude AI for test case generation...")
         
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
@@ -1185,14 +1109,14 @@ def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue
         response_body = json.loads(response['body'].read())
         test_cases = response_body['content'][0]['text']
         
-        print(f"[INFO] Successfully generated AI test cases", flush=True)
+        logger.info("Successfully generated AI test cases")
         return test_cases
         
     except ClientError as e:
-        print(f"[ERROR] AWS Bedrock error: {e}", flush=True)
+        logger.error(f"AWS Bedrock error: {e}")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
     except Exception as e:
-        print(f"[ERROR] Unexpected error in AI generation: {e}", flush=True)
+        logger.error(f"Unexpected error in AI generation: {e}")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
 
 def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content):
@@ -1393,239 +1317,12 @@ Feature: {feature_name}
 """
     
     return gherkin_output
-    """
-    Generate test cases in Cucumber Gherkin format.
-    Organized by: Happy Path, Critical Path, Edge Cases, and Sad Path.
-    """
-    # Extract key words for feature name
-    feature_name = summary[:80] if len(summary) <= 80 else summary[:77] + "..."
-    
-    gherkin_output = f"""Feature: {feature_name}
-  As a user
-  I want to verify the functionality described in {ticket_key}
-  So that the system behaves as expected
-
-  Background:
-    Given the system is in a stable state
-    And all prerequisites are met
-    And test data is prepared
-
-"""
-    
-    # HAPPY PATH - The ideal user flow
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# HAPPY PATH - Ideal User Journey
-# ═══════════════════════════════════════════════════════════════
-
-"""
-    
-    gherkin_output += f"""  @happy_path @smoke @priority_high
-  Scenario: Verify successful completion of main user flow
-    Given the user is on the application
-    When the user performs the expected actions
-    Then the system should respond correctly
-    And all expected elements should be displayed
-    And no errors should occur
-
-  @happy_path @regression
-  Scenario: Verify feature works with valid data
-    Given the user has valid input data
-    When the user submits the data
-    Then the system should process the request successfully
-    And the user should see a success message
-    And the data should be saved correctly
-
-"""
-    
-    # CRITICAL PATH - Must-work scenarios
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# CRITICAL PATH - Essential Business Flows
-# ═══════════════════════════════════════════════════════════════
-
-"""
-    
-    if issue_type == 'Bug':
-        gherkin_output += f"""  @critical_path @bug_verification @priority_critical
-  Scenario: Verify the reported bug is reproducible
-    Given the system is in the state described in the bug report
-    When the user follows the steps to reproduce from {ticket_key}
-    Then the issue described should be observable
-    And all symptoms should match the bug description
-
-  @critical_path @bug_fix @priority_critical
-  Scenario: Verify the bug fix resolves the issue
-    Given the bug fix has been applied
-    When the user performs the same actions that previously caused the bug
-    Then the bug should no longer occur
-    And the system should behave as expected
-    And no new issues should be introduced
-
-"""
-    else:
-        gherkin_output += f"""  @critical_path @feature_verification @priority_critical
-  Scenario: Verify the core functionality works as specified
-    Given the new feature has been implemented
-    When the user accesses the feature
-    Then the feature should work as described in {ticket_key}
-    And all acceptance criteria should be met
-
-  @critical_path @integration @priority_critical
-  Scenario: Verify feature integrates with existing system
-    Given the feature is live in the system
-    When the user interacts with related features
-    Then all integrations should work seamlessly
-    And data flow should be correct across components
-
-"""
-    
-    gherkin_output += """  @critical_path @cross_environment @priority_high
-  Scenario Outline: Verify functionality across all environments
-    Given the user is on the <environment> environment
-    When the user performs the main functionality
-    Then the system should behave consistently
-    And all features should work correctly
-
-    Examples:
-      | environment |
-      | development |
-      | staging     |
-      | production  |
-
-"""
-    
-    # EDGE CASES - Boundary conditions
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# EDGE CASES - Boundary Conditions & Special Scenarios
-# ═══════════════════════════════════════════════════════════════
-
-"""
-    
-    gherkin_output += """  @edge_case @boundary @priority_medium
-  Scenario: Verify handling of minimum values
-    Given the user enters minimum allowed values
-    When the user submits the form
-    Then the system should accept the input
-    And process it correctly without errors
-
-  @edge_case @boundary @priority_medium
-  Scenario: Verify handling of maximum values
-    Given the user enters maximum allowed values
-    When the user submits the form
-    Then the system should accept the input
-    And handle it appropriately
-
-  @edge_case @special_characters @priority_medium
-  Scenario Outline: Verify handling of special characters
-    Given the user enters data with <special_characters>
-    When the user submits the form
-    Then the system should handle it gracefully
-    And display appropriate feedback
-
-    Examples:
-      | special_characters           |
-      | unicode characters (émojis)  |
-      | SQL injection attempts       |
-      | HTML/script tags             |
-      | very long strings            |
-
-  @edge_case @permissions @priority_medium
-  Scenario Outline: Verify behavior with different user roles
-    Given the user is logged in as <role>
-    When the user attempts to access the feature
-    Then the system should <expected_behavior>
-
-    Examples:
-      | role          | expected_behavior                    |
-      | admin         | allow full access                    |
-      | standard_user | allow limited access                 |
-      | guest         | show appropriate restrictions        |
-
-"""
-    
-    # SAD PATH - Error scenarios
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# SAD PATH - Error Handling & Negative Scenarios
-# ═══════════════════════════════════════════════════════════════
-
-"""
-    
-    gherkin_output += """  @sad_path @validation @priority_high
-  Scenario: Verify validation for empty required fields
-    Given the user is on the form
-    When the user submits without filling required fields
-    Then the system should display validation errors
-    And prevent form submission
-    And show clear error messages
-
-  @sad_path @invalid_data @priority_high
-  Scenario Outline: Verify handling of invalid input data
-    Given the user enters <invalid_data>
-    When the user submits the form
-    Then the system should reject the input
-    And display an appropriate error message
-    And not process the request
-
-    Examples:
-      | invalid_data              |
-      | invalid email format      |
-      | negative numbers          |
-      | future dates (if invalid) |
-      | malformed data            |
-
-  @sad_path @authentication @priority_high
-  Scenario: Verify behavior when user is not authenticated
-    Given the user is not logged in
-    When the user tries to access the feature
-    Then the system should redirect to login
-    And preserve the intended destination
-
-  @sad_path @network @priority_medium
-  Scenario: Verify handling of network failures
-    Given the user has initiated an action
-    When a network error occurs
-    Then the system should show a user-friendly error
-    And allow the user to retry
-    And not lose user data
-
-  @sad_path @concurrent @priority_medium
-  Scenario: Verify handling of concurrent operations
-    Given multiple users are accessing the same resource
-    When they perform conflicting operations simultaneously
-    Then the system should handle race conditions gracefully
-    And maintain data integrity
-
-  @sad_path @timeout @priority_medium
-  Scenario: Verify handling of session timeout
-    Given the user has been inactive for a long time
-    When the session expires
-    Then the system should handle timeout appropriately
-    And preserve user work if possible
-    And show clear notification to user
-
-"""
-    
-    # REGRESSION
-    gherkin_output += """# ═══════════════════════════════════════════════════════════════
-# REGRESSION - Ensure No Side Effects
-# ═══════════════════════════════════════════════════════════════
-
-  @regression @priority_high
-  Scenario: Verify related features still work correctly
-    Given the changes from this ticket are live
-    When the user accesses related features
-    Then all related functionality should work as before
-    And no regressions should be introduced
-    And performance should not degrade
-
-"""
-    
-    return gherkin_output
 
 if __name__ == '__main__':
     # Check for required environment variables
     if not JIRA_EMAIL or not JIRA_API_TOKEN:
-        print("Error: JIRA_EMAIL and JIRA_API_TOKEN environment variables are required")
-        print("Please set them before running the app")
+        logger.error("Error: JIRA_EMAIL and JIRA_API_TOKEN environment variables are required")
+        logger.error("Please set them before running the app")
         exit(1)
     
     # Run the app
