@@ -1,0 +1,116 @@
+.test-case-generator {
+  max-width: 1000px;
+  margin: var(--space-xl) auto;
+  padding: 0 var(--space-xl);
+}
+
+.generator-header {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.generator-header h2 {
+  font-size: 2rem;
+  color: var(--gray-800);
+  margin-bottom: var(--space-md);
+}
+
+.generator-header p {
+  color: var(--gray-600);
+  font-size: 1.125rem;
+}
+
+.generator-form {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-xl);
+}
+
+.result-error,
+.result-success {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.result-error {
+  border-left: 4px solid var(--error);
+}
+
+.result-error h3 {
+  color: var(--error);
+  margin-bottom: var(--space-md);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.result-header h3 {
+  color: var(--gray-800);
+  font-size: 1.5rem;
+}
+
+.source-badge {
+  background: var(--hf-green);
+  color: var(--white);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.ticket-info {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.ticket-key a {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--hf-green);
+  text-decoration: none;
+}
+
+.ticket-key a:hover {
+  text-decoration: underline;
+}
+
+.ticket-meta {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.badge {
+  background: var(--gray-200);
+  color: var(--gray-700);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.test-cases-content {
+  background: var(--gray-900);
+  color: var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  overflow-x: auto;
+}
+
+.test-cases-content pre {
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}

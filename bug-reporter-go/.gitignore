@@ -1,0 +1,55 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build artifacts
+dist/
+build/
+
+# Dependencies
+vendor/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Test coverage
+coverage.out
+coverage.html
+*.test
+
+# Frontend
+web/dist/
+web/.vite/
+web/node_modules/
+
+# Data directory
+.bug-reporter/
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,19 @@
+.dashboard-page {
+  min-height: calc(100vh - 200px);
+}
+
+.dashboard-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl);
+}
+
+.dashboard-header .form-group {
+  max-width: 400px;
+}
+
+.wip-screen {
+  max-width: 1200px;
+  margin: var(--space-2xl) auto;
+  padding: 0 var(--space-xl);
+}

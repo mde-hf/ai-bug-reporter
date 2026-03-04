@@ -1,0 +1,135 @@
+.dashboard {
+  max-width: 1200px;
+  margin: var(--space-xl) auto;
+  padding: 0 var(--space-xl);
+}
+
+.dashboard-loading,
+.dashboard-error {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--gray-600);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card h3 {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: var(--space-xs);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.dashboard-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.dashboard-section h3 {
+  font-size: 1.25rem;
+  color: var(--gray-800);
+  margin-bottom: var(--space-lg);
+  font-weight: 600;
+}
+
+.matrix-table {
+  overflow-x: auto;
+}
+
+.matrix-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.matrix-table th,
+.matrix-table td {
+  padding: var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.matrix-table th {
+  background: var(--gray-50);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.matrix-cell {
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.matrix-cell:hover {
+  background: var(--hf-green-light);
+  color: var(--white);
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+}
+
+.platform-card {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.platform-name {
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: var(--space-sm);
+}
+
+.platform-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--hf-green);
+}
+
+.chart-container {
+  height: 300px;
+  position: relative;
+}

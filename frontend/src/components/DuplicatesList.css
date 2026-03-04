@@ -1,0 +1,114 @@
+.duplicates-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin: var(--space-xl) 0;
+  border: 2px solid;
+}
+
+.duplicates-section.high {
+  background-color: #FEE2E2;
+  border-color: var(--error);
+}
+
+.duplicates-section.medium {
+  background-color: #FEF3C7;
+  border-color: var(--warning);
+}
+
+.duplicates-section.low {
+  background-color: #DBEAFE;
+  border-color: var(--info);
+}
+
+.duplicates-section h2 {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--gray-800);
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.toggle-icon {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.duplicates-intro {
+  color: var(--gray-700);
+  margin-bottom: var(--space-lg);
+}
+
+.duplicates-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.duplicate-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  border: 1px solid var(--gray-200);
+}
+
+.duplicate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.duplicate-key {
+  font-weight: 600;
+  color: var(--hf-green);
+  text-decoration: none;
+}
+
+.duplicate-key:hover {
+  text-decoration: underline;
+}
+
+.similarity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.similarity-badge.high {
+  background: var(--error);
+  color: var(--white);
+}
+
+.similarity-badge.medium {
+  background: var(--warning);
+  color: var(--white);
+}
+
+.similarity-badge.low {
+  background: var(--info);
+  color: var(--white);
+}
+
+.duplicate-summary {
+  color: var(--gray-700);
+  margin-bottom: var(--space-sm);
+}
+
+.duplicate-meta {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.duplicates-actions {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--gray-200);
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
