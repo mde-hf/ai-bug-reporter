@@ -7,7 +7,12 @@ A simple, user-friendly bug reporting tool that automatically checks for duplica
 - 🎯 **Simple Interface** - Clean, intuitive form for reporting bugs
 - 🔍 **Automatic Duplicate Detection** - AI-powered search to find similar bugs before creating
 - ✅ **Direct Jira Integration** - Creates bugs under Epic REW-323 automatically
-- 🤖 **AI Test Case Generator** - Claude AI generates comprehensive Cucumber/Gherkin test cases from JIRA tickets or Google Docs
+- 🤖 **Multi-Agent AI System** ⭐ NEW - Advanced AI agents for intelligent bug management:
+  - **Bug Analyzer** - Quality analysis and improvement suggestions
+  - **Duplicate Detective** - Semantic duplicate detection beyond keywords
+  - **Test Enhancer** - Iterative test case improvement
+  - **Bug Triage** - Automatic priority and squad assignment
+- 🧪 **AI Test Case Generator** - Claude AI generates comprehensive Cucumber/Gherkin test cases from JIRA tickets or Google Docs
 - 📊 **Dashboard** - View bug statistics, trends, and metrics
 - 📈 **Charts** - 10-day creation trend visualization
 - 🚀 **Easy Setup** - One command to get started
@@ -218,13 +223,112 @@ AWS Bedrock pricing (approximate):
 
 ---
 
+## 🤖 Multi-Agent AI System
+
+**NEW!** Advanced AI agents powered by AWS Bedrock (Claude 3.5 Sonnet) for intelligent bug management.
+
+### Available Agents
+
+#### 1. Bug Analyzer Agent
+Analyzes bug report quality and provides improvement suggestions:
+- Completeness check (missing fields, clarity)
+- Priority assessment based on severity keywords
+- Environment and platform detection
+- Component/area identification  
+- Quality scoring with actionable feedback
+
+**Usage:** Click "Get AI Insights" button on the Report Bug page
+
+#### 2. Duplicate Detective Agent
+Semantic duplicate detection beyond keyword matching:
+- Understands meaning, not just keywords
+- Identifies duplicates with different wording
+- Semantic similarity scoring (0-100)
+- Confidence levels and detailed reasoning
+
+**Usage:** Automatically runs during duplicate checking (enhanced results)
+
+#### 3. Test Case Enhancer Agent
+Iteratively improves test cases through AI conversation:
+- Add edge cases and boundary conditions
+- Enhance test coverage
+- Add platform-specific scenarios
+- Improve specificity and detail
+
+**Usage:** Click "Enhance with AI" on the Test Case Generator page
+
+#### 4. Bug Triage Agent
+Automatic bug triaging and routing:
+- Priority assessment (Critical/High/Medium/Low)
+- Squad assignment (Loyalty Mission/Virality/Rewards)
+- Component detection
+- Urgency scoring (0-10)
+- Label/tag recommendations
+
+**Usage:** Part of "Get AI Insights" workflow
+
+### API Endpoints
+
+All agent features are exposed via REST API:
+
+```bash
+# List all agents
+GET /api/agents
+
+# Analyze bug quality
+POST /api/agents/analyze-bug
+
+# Auto-triage bug
+POST /api/agents/triage-bug
+
+# Semantic duplicate detection
+POST /api/agents/check-semantic-duplicates
+
+# Enhance test cases
+POST /api/agents/enhance-test-cases
+
+# Complete smart workflow
+POST /api/agents/smart-workflow
+```
+
+### Testing Agents
+
+Test the agent system:
+
+```bash
+cd agents
+python test_agents.py
+```
+
+### Documentation
+
+For detailed agent documentation, see [agents/README.md](agents/README.md)
+
+---
+
 ## 📁 Project Structure
 
 ```
 bug-reporter/
 ├── app.py                 # Flask backend
+├── agents/                # Multi-Agent AI System ⭐
+│   ├── base_agent.py     # Base agent class
+│   ├── bug_analyzer.py   # Bug analysis agent
+│   ├── duplicate_detective.py  # Semantic duplicates
+│   ├── test_enhancer.py  # Test case improvement
+│   ├── bug_triage.py     # Auto-triage agent
+│   ├── agent_manager.py  # Agent orchestration
+│   ├── test_agents.py    # Agent tests
+│   └── README.md         # Agent documentation
+├── frontend/              # React + TypeScript UI
+│   ├── src/
+│   │   ├── components/   # React components
+│   │   ├── services/     # API clients
+│   │   ├── types/        # TypeScript types
+│   │   └── pages/        # Page components
+│   └── package.json
 ├── templates/
-│   └── index.html        # Main UI
+│   └── index.html        # Legacy HTML UI
 ├── static/
 │   ├── css/
 │   │   └── styles.css    # Styling
@@ -252,8 +356,13 @@ bug-reporter/
    - Expected vs Actual Behavior
    - Environment (Staging/Production/Local)
    - Priority (Low/Medium/High/Critical)
-5. Optionally attach screenshots/videos
-6. Click **Create Bug Report**
+5. **NEW!** Click **Get AI Insights** for:
+   - Bug quality analysis
+   - Auto-triage recommendations
+   - Priority suggestions
+   - Squad assignment recommendations
+6. Optionally attach screenshots/videos
+7. Click **Create Bug Report**
 
 ### Dashboard
 

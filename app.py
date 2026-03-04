@@ -72,6 +72,16 @@ except Exception as e:
     logger.warning(f"Failed to initialize AWS Bedrock client: {e}")
     bedrock_runtime = None
 
+# Initialize Multi-Agent System
+agent_manager = None
+try:
+    from agents import AgentManager
+    agent_manager = AgentManager(aws_region=AWS_REGION, model_id=BEDROCK_MODEL_ID)
+    logger.info("Multi-Agent AI System initialized successfully")
+except Exception as e:
+    logger.warning(f"Failed to initialize Multi-Agent System: {e}")
+    agent_manager = None
+
 def get_jira_headers():
     """Get headers for Jira API requests."""
     return {
@@ -1317,6 +1327,253 @@ Feature: {feature_name}
 """
     
     return gherkin_output
+
+# ═══════════════════════════════════════════════════════════════
+# MULTI-AGENT AI SYSTEM ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/api/agents', methods=['GET'])
+def list_agents():
+    """List all available AI agents."""
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    agents = agent_manager.list_agents()
+    return jsonify({
+        'success': True,
+        'agents': agents,
+        'count': len(agents)
+    })
+
+@app.route('/api/agents/analyze-bug', methods=['POST'])
+def analyze_bug_with_ai():
+    """
+    Analyze a bug report using AI.
+    
+    Request body:
+    {
+        "title": "Bug title",
+        "description": "Bug description",
+        "steps": "Steps to reproduce",
+        "expected": "Expected behavior",
+        "actual": "Actual behavior",
+        "environment": "Environment",
+        "priority": "Current priority"
+    }
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data.get('title'):
+            return jsonify({'error': 'Bug title is required'}), 400
+        
+        logger.info(f"Analyzing bug: {data.get('title')}")
+        
+        # Analyze bug using Bug Analyzer agent
+        result = agent_manager.analyze_bug(data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Bug analysis failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/agents/triage-bug', methods=['POST'])
+def triage_bug_with_ai():
+    """
+    Auto-triage a bug using AI.
+    
+    Returns priority, squad assignment, and label recommendations.
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data.get('title'):
+            return jsonify({'error': 'Bug title is required'}), 400
+        
+        logger.info(f"Triaging bug: {data.get('title')}")
+        
+        # Triage bug using Bug Triage agent
+        result = agent_manager.triage_bug(data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Bug triage failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/agents/check-semantic-duplicates', methods=['POST'])
+def check_semantic_duplicates():
+    """
+    Check for semantic duplicates using AI.
+    
+    Goes beyond keyword matching to understand meaning.
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        title = data.get('title', '')
+        description = data.get('description', '')
+        
+        if not title:
+            return jsonify({'error': 'Title is required'}), 400
+        
+        logger.info(f"Semantic duplicate check: {title}")
+        
+        # First, get potential candidates using existing keyword search
+        keyword_matches = search_duplicates(title, description)
+        
+        if not keyword_matches:
+            return jsonify({
+                'success': True,
+                'duplicates_found': [],
+                'message': 'No potential duplicates found'
+            })
+        
+        # Then use AI to do semantic analysis
+        bug_data = {
+            'title': title,
+            'description': description,
+            'steps': data.get('steps', ''),
+            'environment': data.get('environment', '')
+        }
+        
+        # Prepare candidates for AI analysis
+        candidates = [
+            {
+                'key': dup['key'],
+                'title': dup['title'],
+                'description': dup.get('description', '')[:500],  # Limit length
+                'status': dup.get('status', 'Unknown')
+            }
+            for dup in keyword_matches[:5]  # Top 5 candidates
+        ]
+        
+        result = agent_manager.check_duplicates_semantic(bug_data, candidates)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Semantic duplicate check failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/agents/enhance-test-cases', methods=['POST'])
+def enhance_test_cases_with_ai():
+    """
+    Enhance test cases using AI.
+    
+    Request body:
+    {
+        "test_cases": "Current Gherkin test cases",
+        "enhancement_request": "What to improve (e.g., add edge cases)",
+        "ticket_context": {
+            "acceptance_criteria": [...],
+            "user_stories": [...]
+        }
+    }
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        test_cases = data.get('test_cases', '')
+        enhancement_request = data.get('enhancement_request', '')
+        ticket_context = data.get('ticket_context')
+        
+        if not test_cases:
+            return jsonify({'error': 'Test cases are required'}), 400
+        
+        if not enhancement_request:
+            return jsonify({'error': 'Enhancement request is required'}), 400
+        
+        logger.info(f"Enhancing test cases: {enhancement_request}")
+        
+        # Enhance test cases using Test Enhancer agent
+        result = agent_manager.enhance_test_cases(
+            test_cases, 
+            enhancement_request,
+            ticket_context
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Test case enhancement failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/agents/smart-workflow', methods=['POST'])
+def smart_bug_workflow():
+    """
+    Run complete AI-powered bug workflow.
+    
+    Orchestrates multiple agents:
+    1. Analyze bug quality
+    2. Auto-triage (priority, squad)
+    3. Check semantic duplicates
+    
+    Returns comprehensive recommendations.
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data.get('title'):
+            return jsonify({'error': 'Bug title is required'}), 400
+        
+        logger.info(f"Running smart workflow for: {data.get('title')}")
+        
+        # Run complete workflow
+        result = agent_manager.smart_bug_workflow(data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Smart workflow failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     # Check for required environment variables

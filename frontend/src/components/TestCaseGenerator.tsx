@@ -1,13 +1,32 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { bugApi } from '@/services/api';
+import { agentApi } from '@/services/agentApi';
 import './TestCaseGenerator.css';
 
 export default function TestCaseGenerator() {
   const [ticketLink, setTicketLink] = useState('');
+  const [enhancementRequest, setEnhancementRequest] = useState('');
+  const [showEnhancement, setShowEnhancement] = useState(false);
 
   const generateMutation = useMutation({
     mutationFn: () => bugApi.generateTestCases({ ticket_link: ticketLink }),
+  });
+
+  const enhanceMutation = useMutation({
+    mutationFn: () => {
+      if (!generateMutation.data?.test_cases) {
+        throw new Error('No test cases to enhance');
+      }
+      return agentApi.enhanceTestCases({
+        test_cases: generateMutation.data.test_cases,
+        enhancement_request: enhancementRequest,
+        ticket_context: {
+          ticket_key: generateMutation.data.ticket_key,
+          summary: generateMutation.data.summary,
+        }
+      });
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -16,12 +35,25 @@ export default function TestCaseGenerator() {
       alert('Please enter a JIRA ticket or Google Drive link');
       return;
     }
+    setShowEnhancement(false);
     generateMutation.mutate();
   };
 
+  const handleEnhance = () => {
+    if (!enhancementRequest.trim()) {
+      alert('Please describe what you want to improve');
+      return;
+    }
+    enhanceMutation.mutate();
+  };
+
   const handleCopy = () => {
-    if (generateMutation.data?.test_cases) {
-      navigator.clipboard.writeText(generateMutation.data.test_cases);
+    const textToCopy = enhanceMutation.isSuccess && enhanceMutation.data?.response
+      ? enhanceMutation.data.response
+      : generateMutation.data?.test_cases;
+    
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
       alert('Copied to clipboard!');
     }
   };
@@ -111,12 +143,90 @@ export default function TestCaseGenerator() {
           </div>
 
           <div className="test-cases-content">
-            <pre>{generateMutation.data.test_cases}</pre>
+            <pre>
+              {enhanceMutation.isSuccess && enhanceMutation.data?.response
+                ? enhanceMutation.data.response
+                : generateMutation.data.test_cases}
+            </pre>
           </div>
 
-          <button type="button" className="btn btn-secondary" onClick={handleCopy}>
-            Copy to Clipboard
-          </button>
+          <div className="button-group">
+            <button type="button" className="btn btn-secondary" onClick={handleCopy}>
+              Copy to Clipboard
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setShowEnhancement(!showEnhancement)}
+            >
+              {showEnhancement ? 'Hide' : 'Enhance with AI'}
+            </button>
+          </div>
+
+          {showEnhancement && (
+            <div className="enhancement-section">
+              <h4>Enhance Test Cases with AI</h4>
+              <p>Tell Claude AI how you want to improve these test cases:</p>
+              <div className="quick-actions">
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => setEnhancementRequest('Add more edge cases')}
+                >
+                  Add Edge Cases
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => setEnhancementRequest('Add negative test scenarios')}
+                >
+                  Add Negative Tests
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => setEnhancementRequest('Make test steps more detailed and specific')}
+                >
+                  More Detail
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => setEnhancementRequest('Add platform-specific tests for iOS, Android, and Web')}
+                >
+                  Platform Tests
+                </button>
+              </div>
+              <textarea
+                value={enhancementRequest}
+                onChange={(e) => setEnhancementRequest(e.target.value)}
+                rows={3}
+                placeholder="E.g., 'Add more edge cases for error handling' or 'Include tests for mobile platforms'"
+                className="enhancement-input"
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleEnhance}
+                disabled={enhanceMutation.isPending}
+              >
+                {enhanceMutation.isPending ? (
+                  <>
+                    <span className="spinner"></span>
+                    Enhancing...
+                  </>
+                ) : (
+                  'Enhance Test Cases'
+                )}
+              </button>
+
+              {enhanceMutation.isError && (
+                <div className="error-message">
+                  Error enhancing test cases: {(enhanceMutation.error as any)?.response?.data?.error || 'Unknown error'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
