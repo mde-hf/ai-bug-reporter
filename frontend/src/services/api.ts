@@ -62,7 +62,9 @@ export const bugApi = {
 
   // Generate test cases
   async generateTestCases(request: TestCaseRequest): Promise<TestCaseResponse> {
-    const response = await api.post<TestCaseResponse>('/generate-test-cases', request);
+    const response = await api.post<TestCaseResponse>('/generate-test-cases', {
+      ticket: request.ticket_link, // Backend expects 'ticket' not 'ticket_link'
+    });
     return response.data;
   },
 };
