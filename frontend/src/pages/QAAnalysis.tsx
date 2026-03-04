@@ -24,10 +24,24 @@ interface TestRecommendation {
   test_scenarios?: string[];
 }
 
+interface TestTypeBreakdown {
+  count: number;
+  coverage_percentage: number;
+  status: string;
+}
+
+interface TestBreakdown {
+  unit_tests?: TestTypeBreakdown;
+  integration_tests?: TestTypeBreakdown;
+  ui_tests?: TestTypeBreakdown;
+  e2e_tests?: TestTypeBreakdown;
+}
+
 interface AnalysisData {
   coverage_score?: number | string;
   coverage_assessment?: string;
   risk_level?: string;
+  test_breakdown?: TestBreakdown;
   risk_areas?: RiskArea[];
   test_recommendations?: TestRecommendation[];
   missing_tests?: string[];
@@ -40,9 +54,75 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function QAAnalysis() {
   const [githubUrl, setGithubUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressStatus, setProgressStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [prInfo, setPrInfo] = useState<PRInfo | null>(null);
+
+  const simulateProgress = () => {
+    setProgress(0);
+    setProgressStatus('Validating GitHub URL...');
+    
+    // Stage 1: Fetching PR data (0-20%)
+    setTimeout(() => {
+      setProgress(10);
+      setProgressStatus('Connecting to GitHub...');
+    }, 500);
+    
+    setTimeout(() => {
+      setProgress(20);
+      setProgressStatus('Fetching PR data...');
+    }, 1500);
+    
+    // Stage 2: Analyzing files (20-30%)
+    setTimeout(() => {
+      setProgress(25);
+      setProgressStatus('Loading changed files...');
+    }, 3000);
+    
+    setTimeout(() => {
+      setProgress(30);
+      setProgressStatus('Analyzing code changes...');
+    }, 4500);
+    
+    // Stage 3: AI Analysis (30-90%) - slower progress
+    setTimeout(() => {
+      setProgress(40);
+      setProgressStatus('Running AI analysis...');
+    }, 6000);
+    
+    setTimeout(() => {
+      setProgress(50);
+      setProgressStatus('Evaluating test coverage...');
+    }, 10000);
+    
+    setTimeout(() => {
+      setProgress(60);
+      setProgressStatus('Identifying risk areas...');
+    }, 15000);
+    
+    setTimeout(() => {
+      setProgress(70);
+      setProgressStatus('Generating recommendations...');
+    }, 22000);
+    
+    setTimeout(() => {
+      setProgress(80);
+      setProgressStatus('Analyzing test types...');
+    }, 30000);
+    
+    setTimeout(() => {
+      setProgress(90);
+      setProgressStatus('Finalizing analysis...');
+    }, 40000);
+    
+    // Stage 4: Completing (90-95%)
+    setTimeout(() => {
+      setProgress(95);
+      setProgressStatus('Preparing results...');
+    }, 50000);
+  };
 
   const handleAnalyze = async () => {
     if (!githubUrl.trim()) {
@@ -60,6 +140,9 @@ function QAAnalysis() {
     setError(null);
     setAnalysis(null);
     setPrInfo(null);
+    
+    // Start progress simulation
+    simulateProgress();
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/analyze-github`, {
@@ -68,8 +151,12 @@ function QAAnalysis() {
       });
 
       if (response.data.success) {
-        setAnalysis(response.data.analysis);
-        setPrInfo(response.data.pr_info);
+        setProgress(100);
+        setProgressStatus('Complete!');
+        setTimeout(() => {
+          setAnalysis(response.data.analysis);
+          setPrInfo(response.data.pr_info);
+        }, 500);
       } else {
         setError(response.data.error || 'Analysis failed');
       }
@@ -205,6 +292,127 @@ function QAAnalysis() {
                   </div>
                 </div>
               </div>
+
+              {analysis.test_breakdown && (
+                <div className="qa-section">
+                  <h2>Test Coverage Breakdown</h2>
+                  <div className="qa-test-breakdown">
+                    {analysis.test_breakdown.unit_tests && (
+                      <div className="qa-test-type-card">
+                        <div className="qa-test-type-header">
+                          <span className="qa-test-type-icon">🔬</span>
+                          <span className="qa-test-type-name">Unit Tests</span>
+                        </div>
+                        <div className="qa-test-type-stats">
+                          <div className="qa-test-count">{analysis.test_breakdown.unit_tests.count}</div>
+                          <div className="qa-test-percentage">
+                            {analysis.test_breakdown.unit_tests.coverage_percentage}% coverage
+                          </div>
+                          <div
+                            className="qa-test-status"
+                            style={{
+                              color:
+                                analysis.test_breakdown.unit_tests.coverage_percentage >= 70
+                                  ? '#16a34a'
+                                  : analysis.test_breakdown.unit_tests.coverage_percentage >= 40
+                                  ? '#ea580c'
+                                  : '#dc2626',
+                            }}
+                          >
+                            {analysis.test_breakdown.unit_tests.status}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {analysis.test_breakdown.integration_tests && (
+                      <div className="qa-test-type-card">
+                        <div className="qa-test-type-header">
+                          <span className="qa-test-type-icon">🔗</span>
+                          <span className="qa-test-type-name">Integration Tests</span>
+                        </div>
+                        <div className="qa-test-type-stats">
+                          <div className="qa-test-count">
+                            {analysis.test_breakdown.integration_tests.count}
+                          </div>
+                          <div className="qa-test-percentage">
+                            {analysis.test_breakdown.integration_tests.coverage_percentage}% coverage
+                          </div>
+                          <div
+                            className="qa-test-status"
+                            style={{
+                              color:
+                                analysis.test_breakdown.integration_tests.coverage_percentage >= 70
+                                  ? '#16a34a'
+                                  : analysis.test_breakdown.integration_tests.coverage_percentage >= 40
+                                  ? '#ea580c'
+                                  : '#dc2626',
+                            }}
+                          >
+                            {analysis.test_breakdown.integration_tests.status}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {analysis.test_breakdown.ui_tests && (
+                      <div className="qa-test-type-card">
+                        <div className="qa-test-type-header">
+                          <span className="qa-test-type-icon">🎨</span>
+                          <span className="qa-test-type-name">UI Tests</span>
+                        </div>
+                        <div className="qa-test-type-stats">
+                          <div className="qa-test-count">{analysis.test_breakdown.ui_tests.count}</div>
+                          <div className="qa-test-percentage">
+                            {analysis.test_breakdown.ui_tests.coverage_percentage}% coverage
+                          </div>
+                          <div
+                            className="qa-test-status"
+                            style={{
+                              color:
+                                analysis.test_breakdown.ui_tests.coverage_percentage >= 70
+                                  ? '#16a34a'
+                                  : analysis.test_breakdown.ui_tests.coverage_percentage >= 40
+                                  ? '#ea580c'
+                                  : '#dc2626',
+                            }}
+                          >
+                            {analysis.test_breakdown.ui_tests.status}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {analysis.test_breakdown.e2e_tests && (
+                      <div className="qa-test-type-card">
+                        <div className="qa-test-type-header">
+                          <span className="qa-test-type-icon">🎯</span>
+                          <span className="qa-test-type-name">End-to-End Tests</span>
+                        </div>
+                        <div className="qa-test-type-stats">
+                          <div className="qa-test-count">{analysis.test_breakdown.e2e_tests.count}</div>
+                          <div className="qa-test-percentage">
+                            {analysis.test_breakdown.e2e_tests.coverage_percentage}% coverage
+                          </div>
+                          <div
+                            className="qa-test-status"
+                            style={{
+                              color:
+                                analysis.test_breakdown.e2e_tests.coverage_percentage >= 70
+                                  ? '#16a34a'
+                                  : analysis.test_breakdown.e2e_tests.coverage_percentage >= 40
+                                  ? '#ea580c'
+                                  : '#dc2626',
+                            }}
+                          >
+                            {analysis.test_breakdown.e2e_tests.status}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {analysis.risk_areas && analysis.risk_areas.length > 0 && (
                 <div className="qa-section">

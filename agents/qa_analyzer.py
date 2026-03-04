@@ -167,10 +167,17 @@ Be specific, actionable, and prioritize by risk."""
 
 Provide:
 1. Estimated test coverage score (0-100)
-2. Risk assessment (High/Medium/Low) with specific areas
-3. Top 5 testing recommendations prioritized by risk
-4. Specific test scenarios to focus on
-5. Any quality concerns or potential bugs
+2. Test breakdown by type (Unit, Integration, UI, E2E) with counts and coverage percentages
+3. Risk assessment (High/Medium/Low) with specific areas
+4. Top 5 testing recommendations prioritized by risk and test type
+5. Specific test scenarios to focus on
+6. Any quality concerns or potential bugs
+
+**Important**: Analyze the PR files to identify existing tests:
+- Unit tests: Files like `*.test.js`, `*.spec.py`, `test_*.py`, `*Test.java`
+- Integration tests: Files with `integration`, `api_test`, `service_test`
+- UI tests: Files with `ui_test`, `component_test`, React Testing Library
+- E2E tests: Files with `e2e`, `cypress`, `playwright`, `selenium`
 
 Format as JSON as specified in your system prompt."""
 
