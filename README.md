@@ -139,44 +139,45 @@ Visit: **http://localhost:5000**
 
 ---
 
-## 🤖 AI Test Case Generator (AWS Bedrock + Claude)
+## 🤖 AI Test Case Generator (Claude CLI or Anthropic API)
 
 The tool includes an AI-powered test case generator that creates comprehensive Cucumber/Gherkin test scenarios from JIRA tickets or Google Drive documents.
 
-### Setup AWS Bedrock
+### Setup AI Features
 
-To enable AI test case generation, configure AWS Bedrock in your `.env`:
+**Option 1: Claude CLI (Recommended)** ⭐
+
+### Setup AI Features
+
+**Option 1: Claude CLI (Recommended - Uses Company AWS)** ⭐
 
 ```bash
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_REGION=us-east-1  # or your preferred region
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+# Check if you have Claude CLI installed:
+which claude
+
+# If found (e.g., /opt/homebrew/bin/claude):
+# ✅ No .env configuration needed!
+# ✅ Uses your company's AWS Bedrock via SSO
+# ✅ No personal API costs
+# ✅ Just start the app and it works!
 ```
 
-### Getting AWS Credentials
+**Option 2: Anthropic API (Personal Account)**
 
-**Option 1: HelloFresh Enterprise (Recommended)**
-- Contact your DevOps/Platform team to get AWS credentials with Bedrock access
-- HelloFresh likely has an enterprise AWS account with Bedrock enabled
-- This ensures compliance and cost tracking
+```bash
+# Add to your .env file:
+ANTHROPIC_API_KEY=sk-ant-api...
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
 
-**Option 2: AWS IAM User**
-1. Log into AWS Console
-2. Go to IAM → Users → Create User
-3. Attach policy: `AmazonBedrockFullAccess`
-4. Create access keys
-5. Copy the Access Key ID and Secret Access Key
+Get your API key from: https://console.anthropic.com/
 
-### Enable Claude Model in Bedrock
+**Automatic Fallback Priority**:
+1. 🥇 Claude CLI (company AWS Bedrock)
+2. 🥈 Anthropic API (personal account)
+3. 🥉 Rule-based generation (no AI)
 
-1. Go to AWS Console → Amazon Bedrock
-2. Navigate to **Model access** (in left sidebar)
-3. Click **Manage model access**
-4. Enable **Anthropic Claude** models:
-   - `Claude 3.5 Sonnet` (recommended - best quality)
-   - `Claude 3 Sonnet` (alternative)
-5. Submit request (usually instant approval)
+📖 See `CLAUDE_CLI_GUIDE.md` for detailed setup instructions.
 
 ### Supported Input Sources
 
