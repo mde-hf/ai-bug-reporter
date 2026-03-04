@@ -379,3 +379,59 @@
   line-height: 1.6;
   overflow-x: auto;
 }
+
+.qa-test-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.qa-test-type-card {
+  background: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.qa-test-type-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.qa-test-type-icon {
+  font-size: 1.5rem;
+}
+
+.qa-test-type-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 1rem;
+}
+
+.qa-test-type-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qa-test-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.qa-test-percentage {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.qa-test-status {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}

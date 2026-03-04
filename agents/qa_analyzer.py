@@ -73,6 +73,28 @@ Your role is to analyze code changes from a QA perspective and provide actionabl
   "coverage_score": 65,
   "coverage_assessment": "Moderate - some tests present but gaps exist",
   "risk_level": "High",
+  "test_breakdown": {
+    "unit_tests": {
+      "count": 12,
+      "coverage_percentage": 70,
+      "status": "Good"
+    },
+    "integration_tests": {
+      "count": 5,
+      "coverage_percentage": 40,
+      "status": "Needs Improvement"
+    },
+    "ui_tests": {
+      "count": 2,
+      "coverage_percentage": 20,
+      "status": "Poor"
+    },
+    "e2e_tests": {
+      "count": 1,
+      "coverage_percentage": 10,
+      "status": "Poor"
+    }
+  },
   "risk_areas": [
     {
       "file": "auth.py",
@@ -85,6 +107,7 @@ Your role is to analyze code changes from a QA perspective and provide actionabl
     {
       "priority": "Critical",
       "area": "Authentication",
+      "test_type": "Unit",
       "recommendation": "Add unit tests for token validation edge cases",
       "test_scenarios": [
         "Expired token handling",
@@ -105,6 +128,11 @@ Your role is to analyze code changes from a QA perspective and provide actionabl
   ]
 }
 ```
+
+**Test Type Analysis:**
+- Count existing tests by type (unit/integration/UI/E2E)
+- Estimate coverage percentage per type
+- Status: Good (70%+), Needs Improvement (40-69%), Poor (<40%)
 
 Be specific, actionable, and prioritize by risk."""
     
