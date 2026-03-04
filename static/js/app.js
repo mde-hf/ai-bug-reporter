@@ -147,17 +147,17 @@ function displayDuplicates(duplicates, warningMessage) {
     const isCollapsible = count > 1;
     
     if (duplicates[0].similarity >= 80) {
-        heading.innerHTML = `🚨 Very Similar Bugs Found! (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
+        heading.innerHTML = `Very Similar Bugs Found! (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
         intro.innerHTML = 'These bugs are very similar to yours. <strong>Please review them carefully before creating a new ticket:</strong>';
         duplicatesSection.style.backgroundColor = '#fee2e2';
         duplicatesSection.style.borderColor = '#ef4444';
     } else if (duplicates[0].similarity >= 60) {
-        heading.innerHTML = `⚠️ Similar Bugs Found (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
+        heading.innerHTML = `Similar Bugs Found (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
         intro.innerHTML = 'We found bugs that might be related to yours:';
         duplicatesSection.style.backgroundColor = '#fef3c7';
         duplicatesSection.style.borderColor = '#f59e0b';
     } else {
-        heading.innerHTML = `ℹ️ Possibly Related Bugs (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
+        heading.innerHTML = `Possibly Related Bugs (${count})${isCollapsible ? ' <span class="toggle-icon">▼</span>' : ''}`;
         intro.innerHTML = 'These bugs might be related (partial match):';
         duplicatesSection.style.backgroundColor = '#dbeafe';
         duplicatesSection.style.borderColor = '#3b82f6';
@@ -253,7 +253,7 @@ function toggleDuplicatesList() {
 function displayResult(success, message, jiraUrl = null) {
     resultSection.className = `result-section ${success ? 'success' : 'error'}`;
     
-    let content = `<h2>${success ? '✅ Success!' : '❌ Error'}</h2><p>${escapeHtml(message)}</p>`;
+    let content = `<h2>${success ? 'Success!' : 'Error'}</h2><p>${escapeHtml(message)}</p>`;
     
     if (success && jiraUrl) {
         content += `<a href="${jiraUrl}" target="_blank" class="jira-link">View in JIRA →</a>`;
@@ -417,12 +417,12 @@ function displayFilePreview() {
             playIcon.style.left = '50%';
             playIcon.style.transform = 'translate(-50%, -50%)';
             playIcon.style.fontSize = '2rem';
-            playIcon.innerHTML = '▶️';
+            playIcon.innerHTML = '▶';
             previewItem.appendChild(playIcon);
         } else {
             const icon = document.createElement('div');
             icon.className = 'file-icon';
-            icon.innerHTML = '📎';
+            icon.innerHTML = '📄';
             previewItem.appendChild(icon);
         }
         
@@ -519,11 +519,11 @@ function updateThemeButton(theme) {
     const text = document.getElementById('themeText');
     
     if (theme === 'dark') {
-        icon.textContent = '☀️';
-        text.textContent = 'Light Mode';
+        icon.textContent = 'Light Mode';
+        text.textContent = '';
     } else {
-        icon.textContent = '🌙';
-        text.textContent = 'Dark Mode';
+        icon.textContent = 'Dark Mode';
+        text.textContent = '';
     }
 }
 
@@ -668,7 +668,7 @@ function displayDashboard(stats) {
         </div>
         
         <div class="breakdown-section">
-            <h3>🎯 Priority × Status Matrix</h3>
+            <h3>Priority × Status Matrix</h3>
             <div class="insights-grid">
                 <div class="insight-card" style="border-left-color: #dc2626;">
                     <div class="insight-value" style="color: #dc2626;">${urgentOpen + highOpen}</div>
@@ -755,7 +755,7 @@ function displayDashboard(stats) {
         </div>
         
         <div class="breakdown-section" style="margin-top: 2rem;">
-            <h3>📈 Bug Creation Trend (Last 10 Days)</h3>
+            <h3>Bug Creation Trend (Last 10 Days)</h3>
             <div class="chart-container">
                 <canvas id="creationTrendChart"></canvas>
             </div>
@@ -983,13 +983,12 @@ function displayTestCases(data) {
     const isGoogleDrive = data.source_type === 'google_drive';
     const sourceKey = isGoogleDrive ? `GDOC` : data.ticket_key;
     const sourceUrl = isGoogleDrive ? data.document_url : data.ticket_url;
-    const sourceIcon = isGoogleDrive ? '📄' : '🎫';
     
     // Display source information
     ticketInfoDiv.innerHTML = `
         <div class="ticket-card">
             <h4>
-                ${sourceIcon} <a href="${sourceUrl}" target="_blank" style="color: var(--hf-green);">${sourceKey}</a>: ${data.summary}
+                <a href="${sourceUrl}" target="_blank" style="color: var(--hf-green);">${sourceKey}</a>: ${data.summary}
             </h4>
             <div class="ticket-meta">
                 <span class="badge">${isGoogleDrive ? 'Google Docs' : data.issue_type}</span>
@@ -1034,7 +1033,7 @@ function copyTestCases() {
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.querySelector('#testcaseTab .btn-secondary');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = 'Copied!';
         btn.style.background = 'var(--hf-green)';
         
         setTimeout(() => {
