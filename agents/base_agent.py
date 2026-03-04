@@ -69,8 +69,9 @@ class BaseAgent(ABC):
                     import subprocess
                     logger.info(f"{self.agent_name}: Trying Claude CLI...")
                     
+                    # Claude CLI syntax: claude --print --model sonnet "prompt"
                     result = subprocess.run(
-                        [self.claude_cli_path, '--model', 'sonnet', '--message', full_prompt],
+                        [self.claude_cli_path, '--print', '--model', 'sonnet', full_prompt],
                         capture_output=True,
                         text=True,
                         timeout=120,
