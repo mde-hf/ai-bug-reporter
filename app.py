@@ -2097,19 +2097,39 @@ def analyze_github():
                     if json_match:
                         try:
                             analysis_data = json.loads(json_match.group(1))
-                        except json.JSONDecodeError:
-                            # Fallback: return raw text
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"JSON decode error: {e}")
+                            # Fallback: extract key info from text
                             analysis_data = {
                                 'raw_analysis': ai_response,
                                 'coverage_score': 'N/A',
                                 'risk_level': 'Unknown'
                             }
+                            # Extract coverage score
+                            coverage_match = re.search(r'coverage[:\s]+(\d+)%?', ai_response, re.IGNORECASE)
+                            if coverage_match:
+                                analysis_data['coverage_score'] = int(coverage_match.group(1))
+                            
+                            # Extract risk level
+                            risk_match = re.search(r'risk[:\s]+(high|medium|low)', ai_response, re.IGNORECASE)
+                            if risk_match:
+                                analysis_data['risk_level'] = risk_match.group(1).capitalize()
                     else:
+                        # No JSON block, parse text
                         analysis_data = {
                             'raw_analysis': ai_response,
                             'coverage_score': 'N/A',
                             'risk_level': 'Unknown'
                         }
+                        # Extract coverage
+                        coverage_match = re.search(r'coverage[:\s]+(\d+)%?', ai_response, re.IGNORECASE)
+                        if coverage_match:
+                            analysis_data['coverage_score'] = int(coverage_match.group(1))
+                        
+                        # Extract risk
+                        risk_match = re.search(r'risk[:\s]+(high|medium|low)', ai_response, re.IGNORECASE)
+                        if risk_match:
+                            analysis_data['risk_level'] = risk_match.group(1).capitalize()
                     
                     return jsonify({
                         'success': True,
