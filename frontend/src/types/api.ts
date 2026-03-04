@@ -24,6 +24,14 @@ export interface DuplicateBug {
   created: string;
 }
 
+export interface DuplicateCheckResponse {
+  duplicates: DuplicateBug[];
+  has_duplicates: boolean;
+  high_similarity_count: number;
+  medium_similarity_count: number;
+  warning_message: string | null;
+}
+
 export interface BugRequest {
   title: string;
   description: string;

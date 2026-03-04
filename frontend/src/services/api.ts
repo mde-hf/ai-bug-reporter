@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   DuplicateBug,
+  DuplicateCheckResponse,
   BugRequest,
   BugResponse,
   EpicStats,
@@ -20,11 +21,11 @@ const api = axios.create({
 export const bugApi = {
   // Check for duplicate bugs
   async checkDuplicates(title: string, description: string): Promise<DuplicateBug[]> {
-    const response = await api.post<DuplicateBug[]>('/check-duplicates', {
+    const response = await api.post<DuplicateCheckResponse>('/check-duplicates', {
       title,
       description,
     });
-    return response.data;
+    return response.data.duplicates;
   },
 
   // Create a new bug
