@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { bugApi } from '@/services/api';
 import type { BugRequest, Project, Priority, Environment } from '@/types/api';
 import DuplicatesList from './DuplicatesList';
-import { AIInsights } from './AIInsights';
 import './BugForm.css';
 
 export default function BugForm() {
@@ -278,23 +277,6 @@ export default function BugForm() {
               </select>
             </div>
           </div>
-
-          <AIInsights
-            bugData={{
-              title,
-              description,
-              steps,
-              expected,
-              actual,
-              environment,
-              priority
-            }}
-            onApplyRecommendations={(recommendations) => {
-              if (recommendations.priority) {
-                setPriority(recommendations.priority as Priority);
-              }
-            }}
-          />
 
           <div className="button-group">
             <button
