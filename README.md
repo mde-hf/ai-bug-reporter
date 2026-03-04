@@ -216,7 +216,9 @@ The AI automatically detects and extracts:
 
 ### Fallback Mode
 
-If AWS Bedrock is not configured or unavailable, the system automatically falls back to rule-based test case generation. Your tool will still work, just with simpler test scenarios.
+### Fallback Mode (No AI)
+
+If Claude CLI and Anthropic API are not configured or unavailable, the system automatically falls back to rule-based test case generation. Your tool will still work, just with simpler test scenarios.
 
 ### Cost Estimation
 
@@ -229,7 +231,7 @@ AWS Bedrock pricing (approximate):
 
 ## 🤖 Multi-Agent AI System
 
-**NEW!** Advanced AI agents powered by AWS Bedrock (Claude 3.5 Sonnet) for intelligent bug management.
+**NEW!** Advanced AI agents powered by Claude (CLI or API) for intelligent bug management.
 
 ### Available Agents
 

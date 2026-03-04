@@ -1346,7 +1346,7 @@ def generate_critical_path_tests_fallback(ticket_key, summary, description, issu
     feature_name = summary[:80] if len(summary) <= 80 else summary[:77] + "..."
     
     gherkin_output = f"""# NOTE: These tests were generated using fallback mode (AI unavailable)
-# For better, context-aware test cases, configure AWS Bedrock.
+# For better, context-aware test cases, configure Claude CLI or Anthropic API.
 
 Feature: {feature_name}
   
@@ -1409,7 +1409,7 @@ Feature: {feature_name}
     
     gherkin_output += """
 # ═══════════════════════════════════════════════════════════════
-# Configure AWS Bedrock for AI-generated, context-aware tests
+# Configure Claude CLI or Anthropic API for AI-generated, context-aware tests
 # ═══════════════════════════════════════════════════════════════
 """
     
