@@ -165,21 +165,39 @@ Be specific, actionable, and prioritize by risk."""
 **Changed Files:**
 {files_summary}
 
-Provide:
-1. Estimated test coverage score (0-100)
-2. Test breakdown by type (Unit, Integration, UI, E2E) with counts and coverage percentages
-3. Risk assessment (High/Medium/Low) with specific areas
-4. Top 5 testing recommendations prioritized by risk and test type
-5. Specific test scenarios to focus on
-6. Any quality concerns or potential bugs
+Provide a COMPREHENSIVE analysis with ALL sections:
 
-**Important**: Analyze the PR files to identify existing tests:
-- Unit tests: Files like `*.test.js`, `*.spec.py`, `test_*.py`, `*Test.java`
-- Integration tests: Files with `integration`, `api_test`, `service_test`
-- UI tests: Files with `ui_test`, `component_test`, React Testing Library
-- E2E tests: Files with `e2e`, `cypress`, `playwright`, `selenium`
+1. **Test Coverage Analysis**:
+   - Overall coverage score (0-100)
+   - Coverage assessment
+   - Test breakdown by type (unit, integration, UI, E2E)
 
-Format as JSON as specified in your system prompt."""
+2. **Risk Assessment**:
+   - Overall risk level (High/Medium/Low)
+   - Specific risk areas with file names
+
+3. **Testing Recommendations**:
+   - Prioritized test recommendations
+   - Specific test scenarios
+
+4. **Developer Recommendations** (REQUIRED - at least 3):
+   - Code quality improvements
+   - Refactoring suggestions
+   - Error handling enhancements
+   - Testability improvements
+   - Each with: priority, area, recommendation, action, benefit
+
+5. **QA Recommendations** (REQUIRED - at least 3):
+   - Testing focus areas
+   - Security vulnerabilities to check
+   - Test coverage gaps
+   - Each with: priority, area, focus, vulnerabilities[], test_coverage_needed[]
+
+6. **Missing Tests & Suggested Test Cases**
+
+**CRITICAL**: Include complete developer_recommendations and qa_recommendations arrays in your JSON response. These are NOT optional.
+
+Format as JSON matching the structure in your system prompt."""
 
         return self.invoke(prompt)
     

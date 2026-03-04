@@ -273,6 +273,9 @@ function QAAnalysis() {
           {analysis.raw_analysis && !analysis.test_breakdown ? (
             <div className="qa-section">
               <h2>AI Analysis</h2>
+              <p className="qa-ai-badge">
+                🤖 Powered by Claude AI - Comprehensive QA Analysis
+              </p>
               <div className="qa-formatted-text">
                 {analysis.raw_analysis.split('\n').map((line, index) => {
                   // Check if line is a heading
@@ -321,6 +324,12 @@ function QAAnalysis() {
             </div>
           ) : (
             <>
+              <div className="qa-ai-badge-section">
+                <p className="qa-ai-badge">
+                  🤖 Powered by Claude AI - Comprehensive QA Analysis
+                </p>
+              </div>
+              
               <div className="qa-overview">
                 <div className="qa-overview-card">
                   <h3>Test Coverage</h3>
@@ -551,7 +560,7 @@ function QAAnalysis() {
                 <div className="qa-section qa-dev-section">
                   <h2>👨‍💻 Developer Recommendations</h2>
                   <p className="qa-section-subtitle">
-                    Actionable improvements to enhance code quality and maintainability
+                    AI-generated actionable improvements to enhance code quality and maintainability
                   </p>
                   <div className="qa-dev-recommendations">
                     {analysis.developer_recommendations.map((rec, index) => (
@@ -591,7 +600,7 @@ function QAAnalysis() {
                 <div className="qa-section qa-tester-section">
                   <h2>🔍 QA Recommendations</h2>
                   <p className="qa-section-subtitle">
-                    Critical testing focus areas and potential vulnerabilities
+                    AI-identified critical testing focus areas and potential vulnerabilities
                   </p>
                   <div className="qa-tester-recommendations">
                     {analysis.qa_recommendations.map((rec, index) => (
