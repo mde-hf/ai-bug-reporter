@@ -223,10 +223,19 @@ If Claude CLI and Anthropic API are not configured or unavailable, the system au
 
 ### Cost Estimation
 
-AWS Bedrock pricing (approximate):
-- Claude 3.5 Sonnet: ~$0.003-0.015 per test case generation
-- Very affordable for enterprise use
-- Much cheaper than manual test case writing
+### AI Costs
+
+**Claude CLI (Company AWS):**
+- ✅ Free for you - uses company resources
+- ✅ No personal API costs
+
+**Anthropic API (Personal):**
+- Claude 3.5 Sonnet: ~$0.003-0.015 per test case
+- Very affordable
+
+**Fallback (No AI):**
+- ✅ Completely free
+- Rule-based generation
 
 ---
 

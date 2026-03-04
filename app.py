@@ -117,8 +117,9 @@ def call_claude_cli(prompt, model='sonnet'):
     try:
         logger.info(f"Calling Claude CLI with model: {model}")
         
+        # Claude CLI syntax: claude --print --model sonnet "prompt"
         result = subprocess.run(
-            [CLAUDE_CLI_PATH, '--model', model, '--message', prompt],
+            [CLAUDE_CLI_PATH, '--print', '--model', model, prompt],
             capture_output=True,
             text=True,
             timeout=120,  # 2 minute timeout
