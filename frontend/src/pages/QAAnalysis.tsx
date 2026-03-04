@@ -546,6 +546,102 @@ function QAAnalysis() {
                   </ul>
                 </div>
               )}
+
+              {analysis.developer_recommendations && analysis.developer_recommendations.length > 0 && (
+                <div className="qa-section qa-dev-section">
+                  <h2>👨‍💻 Developer Recommendations</h2>
+                  <p className="qa-section-subtitle">
+                    Actionable improvements to enhance code quality and maintainability
+                  </p>
+                  <div className="qa-dev-recommendations">
+                    {analysis.developer_recommendations.map((rec, index) => (
+                      <div key={index} className="qa-dev-card">
+                        <div className="qa-dev-header">
+                          <span
+                            className="qa-dev-priority"
+                            style={{
+                              backgroundColor:
+                                rec.priority === 'High' || rec.priority === 'Critical'
+                                  ? '#dc2626'
+                                  : rec.priority === 'Medium'
+                                  ? '#ea580c'
+                                  : '#16a34a',
+                            }}
+                          >
+                            {rec.priority}
+                          </span>
+                          <span className="qa-dev-area">{rec.area}</span>
+                        </div>
+                        <div className="qa-dev-recommendation">{rec.recommendation}</div>
+                        <div className="qa-dev-details">
+                          <div className="qa-dev-action">
+                            <strong>Action:</strong> {rec.action}
+                          </div>
+                          <div className="qa-dev-benefit">
+                            <strong>Benefit:</strong> {rec.benefit}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysis.qa_recommendations && analysis.qa_recommendations.length > 0 && (
+                <div className="qa-section qa-tester-section">
+                  <h2>🔍 QA Recommendations</h2>
+                  <p className="qa-section-subtitle">
+                    Critical testing focus areas and potential vulnerabilities
+                  </p>
+                  <div className="qa-tester-recommendations">
+                    {analysis.qa_recommendations.map((rec, index) => (
+                      <div key={index} className="qa-tester-card">
+                        <div className="qa-tester-header">
+                          <span
+                            className="qa-tester-priority"
+                            style={{
+                              backgroundColor:
+                                rec.priority === 'High' || rec.priority === 'Critical'
+                                  ? '#dc2626'
+                                  : rec.priority === 'Medium'
+                                  ? '#ea580c'
+                                  : '#16a34a',
+                            }}
+                          >
+                            {rec.priority}
+                          </span>
+                          <span className="qa-tester-area">{rec.area}</span>
+                        </div>
+                        <div className="qa-tester-focus">
+                          <strong>Focus:</strong> {rec.focus}
+                        </div>
+                        
+                        {rec.vulnerabilities && rec.vulnerabilities.length > 0 && (
+                          <div className="qa-tester-vulnerabilities">
+                            <strong>⚠️ Potential Vulnerabilities:</strong>
+                            <ul>
+                              {rec.vulnerabilities.map((vuln, idx) => (
+                                <li key={idx}>{vuln}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {rec.test_coverage_needed && rec.test_coverage_needed.length > 0 && (
+                          <div className="qa-tester-coverage">
+                            <strong>✓ Test Coverage Needed:</strong>
+                            <ul>
+                              {rec.test_coverage_needed.map((test, idx) => (
+                                <li key={idx}>{test}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
