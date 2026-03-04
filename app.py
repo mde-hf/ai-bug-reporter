@@ -776,26 +776,122 @@ def get_epic_stats():
 
 @app.route('/api/check-duplicates', methods=['POST'])
 def check_duplicates():
-    """Check for duplicate bugs."""
+    """
+    Check for duplicate bugs with AI-powered semantic analysis.
+    Falls back to rule-based matching if AI unavailable.
+    """
     data = request.json
     title = data.get('title', '')
     description = data.get('description', '')
+    steps = data.get('steps_to_reproduce', '')
+    environment = data.get('environment', '')
     
     if not title:
         return jsonify({'error': 'Title is required'}), 400
     
-    duplicates = search_duplicates(title, description)
+    # Step 1: Get candidate duplicates using rule-based search
+    logger.info(f"Checking duplicates for: '{title}'")
+    candidates = search_duplicates(title, description)
+    
+    if not candidates:
+        return jsonify({
+            'duplicates': [],
+            'has_duplicates': False,
+            'ai_enhanced': False,
+            'method': 'rule-based',
+            'warning_message': None
+        })
+    
+    # Step 2: Try AI semantic analysis if available
+    if agent_manager and USE_CLAUDE_CLI:
+        try:
+            logger.info("Using AI semantic duplicate detection...")
+            
+            # Prepare bug data for AI analysis
+            bug_data = {
+                'title': title,
+                'description': description,
+                'steps': steps,
+                'environment': environment
+            }
+            
+            # Prepare candidates for AI (limit to top 5 for performance)
+            ai_candidates = []
+            for candidate in candidates[:5]:
+                ai_candidates.append({
+                    'key': candidate['key'],
+                    'title': candidate['title'],
+                    'description': candidate['description'][:500],  # Limit length
+                    'status': candidate['status']
+                })
+            
+            # Get AI analysis
+            agent = agent_manager.get_agent('duplicate_detective')
+            if agent:
+                ai_result = agent.find_semantic_duplicates(bug_data, ai_candidates)
+                
+                if ai_result.get('success'):
+                    # Parse AI response to update similarity scores
+                    ai_response = ai_result.get('response', '')
+                    
+                    # Try to extract JSON from AI response
+                    import re
+                    json_match = re.search(r'```json\s*(.*?)\s*```', ai_response, re.DOTALL)
+                    if json_match:
+                        try:
+                            ai_scores = json.loads(json_match.group(1))
+                            
+                            # Update candidates with AI scores
+                            for candidate in candidates[:5]:
+                                for ai_score in ai_scores:
+                                    if ai_score.get('candidate_key') == candidate['key']:
+                                        # Use AI score if higher than rule-based
+                                        ai_similarity = ai_score.get('similarity_score', candidate['similarity'])
+                                        candidate['similarity'] = max(candidate['similarity'], ai_similarity)
+                                        candidate['ai_reasoning'] = ai_score.get('reasoning', '')
+                                        candidate['ai_enhanced'] = True
+                            
+                            # Re-sort by updated scores
+                            candidates.sort(key=lambda x: x['similarity'], reverse=True)
+                            
+                            logger.info(f"AI enhanced {len(ai_scores)} candidates")
+                        except json.JSONDecodeError:
+                            logger.warning("Could not parse AI response as JSON")
+                    
+                    # Mark as AI-enhanced
+                    for candidate in candidates[:5]:
+                        if 'ai_enhanced' not in candidate:
+                            candidate['ai_enhanced'] = False
+                    
+                    method = 'ai-semantic'
+                else:
+                    logger.warning("AI analysis failed, using rule-based scores")
+                    method = 'rule-based-fallback'
+            else:
+                logger.warning("Duplicate Detective agent not available")
+                method = 'rule-based'
+        except Exception as e:
+            logger.error(f"Error in AI duplicate detection: {e}")
+            method = 'rule-based-fallback'
+    else:
+        method = 'rule-based'
+        if not agent_manager:
+            logger.debug("Agent manager not initialized")
+        if not USE_CLAUDE_CLI:
+            logger.debug("Claude CLI not available")
     
     # Categorize duplicates by similarity
-    high_similarity = [d for d in duplicates if d['similarity'] >= 70]
-    medium_similarity = [d for d in duplicates if 40 <= d['similarity'] < 70]
+    high_similarity = [d for d in candidates if d['similarity'] >= 70]
+    medium_similarity = [d for d in candidates if 40 <= d['similarity'] < 70]
     
     return jsonify({
-        'duplicates': duplicates,
-        'has_duplicates': len(duplicates) > 0,
+        'duplicates': candidates,
+        'has_duplicates': len(candidates) > 0,
         'high_similarity_count': len(high_similarity),
         'medium_similarity_count': len(medium_similarity),
-        'warning_message': get_duplicate_warning(duplicates)
+        'ai_enhanced': method.startswith('ai'),
+        'method': method,
+        'warning_message': get_duplicate_warning(candidates)
     })
 
 def get_duplicate_warning(duplicates):
