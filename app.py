@@ -3,6 +3,7 @@
 AI Bug Reporting Tool for HelloFresh
 Checks for duplicate tickets before creating new ones in Jira.
 AI-powered test case generation using Claude (via CLI or API).
+Google Drive integration via OAuth2 for org-restricted documents.
 """
 
 import os
@@ -18,16 +19,16 @@ import shutil
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, session
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
 import anthropic
 
-# Load environment variables
+# Load environment variables first
 load_dotenv()
 
-# Configure logging
+# Configure logging early
 logging.basicConfig(
     level=logging.INFO,
     format='[%(levelname)s] %(message)s',
@@ -35,9 +36,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Google Drive OAuth imports
+try:
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import Flow
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    GOOGLE_DRIVE_AVAILABLE = True
+except ImportError:
+    GOOGLE_DRIVE_AVAILABLE = False
+    logger.warning("Google Drive libraries not installed. Run: pip install -r requirements.txt")
+
 # Flask app
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 CORS(app)
+
+# Google Drive OAuth Configuration
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:5000/google/callback')
+GOOGLE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+# Google credentials storage
+GOOGLE_TOKEN_FILE = os.path.join(os.path.dirname(__file__), '.google_token.json')
 
 # Configuration Constants
 JIRA_BASE_URL = os.environ.get('JIRA_BASE_URL', 'https://hellofresh.atlassian.net')
@@ -47,6 +69,9 @@ JIRA_EMAIL = os.environ.get('JIRA_EMAIL')
 JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
 EPIC_KEY = os.environ.get('EPIC_KEY', 'REW-323')
 PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
+
+# Slack Configuration
+SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
 
 # Anthropic Configuration (like Agento)
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
@@ -827,6 +852,172 @@ def health():
     """Health check endpoint."""
     return jsonify({'status': 'ok', 'epic': EPIC_KEY})
 
+# ═══════════════════════════════════════════════════════════════
+# GOOGLE DRIVE OAUTH & AUTHENTICATION
+# ═══════════════════════════════════════════════════════════════
+
+def get_google_credentials():
+    """Load Google OAuth credentials from token file."""
+    if not os.path.exists(GOOGLE_TOKEN_FILE):
+        return None
+    
+    try:
+        with open(GOOGLE_TOKEN_FILE, 'r') as f:
+            token_data = json.load(f)
+        
+        creds = Credentials.from_authorized_user_info(token_data, GOOGLE_SCOPES)
+        
+        # Check if credentials are valid
+        if creds and creds.valid:
+            return creds
+        
+        # Try to refresh if expired
+        if creds and creds.expired and creds.refresh_token:
+            from google.auth.transport.requests import Request
+            creds.refresh(Request())
+            save_google_credentials(creds)
+            return creds
+            
+        return None
+    except Exception as e:
+        logger.error(f"Error loading Google credentials: {e}")
+        return None
+
+def save_google_credentials(creds):
+    """Save Google OAuth credentials to token file."""
+    try:
+        token_data = {
+            'token': creds.token,
+            'refresh_token': creds.refresh_token,
+            'token_uri': creds.token_uri,
+            'client_id': creds.client_id,
+            'client_secret': creds.client_secret,
+            'scopes': creds.scopes
+        }
+        with open(GOOGLE_TOKEN_FILE, 'w') as f:
+            json.dump(token_data, f)
+        logger.info("Google credentials saved successfully")
+    except Exception as e:
+        logger.error(f"Error saving Google credentials: {e}")
+
+@app.route('/google/auth')
+def google_auth():
+    """Initiate Google OAuth flow."""
+    if not GOOGLE_DRIVE_AVAILABLE:
+        return jsonify({
+            'error': 'Google Drive integration not available. Install dependencies: pip install -r requirements.txt'
+        }), 500
+    
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        return jsonify({
+            'error': 'Google OAuth not configured. See GOOGLE_DRIVE_SETUP.md for instructions.'
+        }), 500
+    
+    try:
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_REDIRECT_URI]
+                }
+            },
+            scopes=GOOGLE_SCOPES
+        )
+        flow.redirect_uri = GOOGLE_REDIRECT_URI
+        
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent'
+        )
+        
+        session['state'] = state
+        return redirect(authorization_url)
+    except Exception as e:
+        logger.error(f"Error initiating Google OAuth: {e}")
+        return jsonify({'error': f'Failed to start Google authentication: {str(e)}'}), 500
+
+@app.route('/google/callback')
+def google_callback():
+    """Handle Google OAuth callback."""
+    if not GOOGLE_DRIVE_AVAILABLE:
+        return "Google Drive integration not available", 500
+    
+    try:
+        state = session.get('state')
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_REDIRECT_URI]
+                }
+            },
+            scopes=GOOGLE_SCOPES,
+            state=state
+        )
+        flow.redirect_uri = GOOGLE_REDIRECT_URI
+        
+        # Get authorization code from callback
+        authorization_response = request.url
+        flow.fetch_token(authorization_response=authorization_response)
+        
+        # Save credentials
+        creds = flow.credentials
+        save_google_credentials(creds)
+        
+        return """
+        <html>
+            <body>
+                <h2>✅ Google Drive Connected!</h2>
+                <p>You can now access org-restricted Google Docs.</p>
+                <p><a href="/">Go back to Bug Reporter</a></p>
+            </body>
+        </html>
+        """
+    except Exception as e:
+        logger.error(f"Error in Google OAuth callback: {e}")
+        return f"<h2>❌ Authentication Failed</h2><p>{str(e)}</p><p><a href='/google/auth'>Try again</a></p>", 500
+
+def fetch_google_doc_authenticated(doc_id):
+    """
+    Fetch Google Doc content using authenticated API.
+    Works with org-restricted documents.
+    """
+    creds = get_google_credentials()
+    
+    if not creds:
+        return None, "Not authenticated. Visit /google/auth to connect your Google account."
+    
+    try:
+        service = build('drive', 'v3', credentials=creds)
+        
+        # Export as plain text
+        request_obj = service.files().export(fileId=doc_id, mimeType='text/plain')
+        content = request_obj.execute().decode('utf-8')
+        
+        # Get document metadata
+        metadata = service.files().get(fileId=doc_id, fields='name').execute()
+        title = metadata.get('name', 'Untitled Document')
+        
+        return {'content': content, 'title': title}, None
+        
+    except HttpError as e:
+        if e.resp.status == 404:
+            return None, "Document not found. Check the link and your access permissions."
+        elif e.resp.status == 403:
+            return None, "Access denied. You may not have permission to view this document."
+        else:
+            return None, f"Google Drive API error: {e.resp.status} - {str(e)}"
+    except Exception as e:
+        return None, f"Error fetching document: {str(e)}"
+
 @app.route('/api/generate-test-cases', methods=['POST'])
 def generate_test_cases():
     """
@@ -909,7 +1100,7 @@ def handle_jira_test_cases(ticket_input):
 def handle_google_drive_test_cases(drive_url):
     """
     Handle test case generation from Google Drive link.
-    Note: This requires the document to be publicly accessible or proper authentication.
+    Uses OAuth for org-restricted documents, falls back to public access.
     """
     logger.info(f"Processing Google Drive link: {drive_url}")
     
@@ -923,18 +1114,14 @@ def handle_google_drive_test_cases(drive_url):
     if not doc_id:
         return jsonify({'error': 'Could not extract document ID from Google Drive URL'}), 400
     
-    try:
-        # Try to fetch as Google Docs (export as plain text)
-        export_url = f'https://docs.google.com/document/d/{doc_id}/export?format=txt'
-        
-        response = requests.get(export_url, timeout=10)
-        
-        if response.status_code == 200:
-            content = response.text
+    # Try authenticated access first (for org-restricted docs)
+    if GOOGLE_DRIVE_AVAILABLE:
+        result, error = fetch_google_doc_authenticated(doc_id)
+        if result:
+            content = result['content']
+            title = result['title']
             
-            # Extract title from first line or use generic
             lines = content.split('\n')
-            title = lines[0].strip() if lines else "Google Drive Document"
             description = '\n'.join(lines[1:]).strip() if len(lines) > 1 else content
             
             # Parse content for structured information
@@ -952,6 +1139,55 @@ def handle_google_drive_test_cases(drive_url):
             return jsonify({
                 'success': True,
                 'source_type': 'google_drive',
+                'auth_method': 'oauth',
+                'document_id': doc_id,
+                'document_url': drive_url,
+                'summary': title,
+                'description': description[:500] + ('...' if len(description) > 500 else ''),
+                'issue_type': 'Documentation',
+                'status': 'N/A',
+                'priority': 'N/A',
+                'test_cases': test_cases
+            })
+        elif "Not authenticated" in error:
+            # Need to authenticate
+            return jsonify({
+                'error': 'Google Drive authentication required for org-restricted documents.\n\n'
+                        'Steps:\n'
+                        '1. Visit http://localhost:5000/google/auth\n'
+                        '2. Sign in with your HelloFresh Google account\n'
+                        '3. Grant permissions\n'
+                        '4. Try again\n\n'
+                        'Or make the document "Anyone with the link"',
+                'auth_url': '/google/auth'
+            }), 401
+    
+    # Fallback: Try public access (works if document is "Anyone with the link")
+    try:
+        export_url = f'https://docs.google.com/document/d/{doc_id}/export?format=txt'
+        response = requests.get(export_url, timeout=10)
+        
+        if response.status_code == 200:
+            content = response.text
+            
+            lines = content.split('\n')
+            title = lines[0].strip() if lines else "Google Drive Document"
+            description = '\n'.join(lines[1:]).strip() if len(lines) > 1 else content
+            
+            parsed_content = parse_ticket_content(description)
+            
+            test_cases = generate_critical_path_tests_with_ai(
+                f"GDOC-{doc_id[:8]}", 
+                title, 
+                description, 
+                "Documentation",
+                parsed_content
+            )
+            
+            return jsonify({
+                'success': True,
+                'source_type': 'google_drive',
+                'auth_method': 'public',
                 'document_id': doc_id,
                 'document_url': drive_url,
                 'summary': title,
@@ -962,17 +1198,21 @@ def handle_google_drive_test_cases(drive_url):
                 'test_cases': test_cases
             })
         else:
-            # Document might not be public or not a Google Doc
+            # Document not accessible
             return jsonify({
-                'error': 'Could not access Google Drive document. Please ensure:\n'
-                        '1. The document is shared with "Anyone with the link"\n'
-                        '2. The link is a Google Docs document (not Sheets or Slides)\n'
-                        f'3. Status code received: {response.status_code}'
-            }), 400
+                'error': 'Could not access Google Drive document.\n\n'
+                        'Options:\n'
+                        '1. Authenticate with Google: Visit /google/auth\n'
+                        '2. Or change sharing to "Anyone with the link"\n\n'
+                        f'Status code: {response.status_code}',
+                'auth_url': '/google/auth'
+            }), 401
             
     except requests.exceptions.RequestException as e:
         return jsonify({
-            'error': f'Failed to fetch Google Drive document: {str(e)}'
+            'error': f'Failed to fetch Google Drive document: {str(e)}\n\n'
+                    'Try authenticating: Visit /google/auth',
+            'auth_url': '/google/auth'
         }), 500
 
 def extract_description_text(description):
