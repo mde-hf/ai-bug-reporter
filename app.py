@@ -2,7 +2,7 @@
 """
 AI Bug Reporting Tool for HelloFresh
 Checks for duplicate tickets before creating new ones in Jira.
-AI-powered test case generation using AWS Bedrock (Claude).
+AI-powered test case generation using Claude (via CLI or API).
 """
 
 import os
@@ -13,6 +13,8 @@ import base64
 import urllib.parse
 import logging
 import traceback
+import subprocess
+import shutil
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -50,6 +52,10 @@ PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
 ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
 
+# Claude CLI detection (like Agento - uses company AWS)
+CLAUDE_CLI_PATH = shutil.which('claude')
+USE_CLAUDE_CLI = CLAUDE_CLI_PATH is not None
+
 # Application Constants
 MAX_DUPLICATES_TO_RETURN = 8
 SIMILARITY_THRESHOLD_MIN = 30
@@ -58,7 +64,7 @@ HIGH_SIMILARITY_THRESHOLD = 80
 MEDIUM_SIMILARITY_THRESHOLD = 60
 LOW_SIMILARITY_THRESHOLD = 40
 
-# Initialize Anthropic client (like Agento does)
+# Initialize Anthropic client (backup option)
 anthropic_client = None
 if ANTHROPIC_API_KEY:
     try:
@@ -68,17 +74,109 @@ if ANTHROPIC_API_KEY:
         logger.warning(f"Failed to initialize Anthropic client: {e}")
         anthropic_client = None
 else:
-    logger.info("ANTHROPIC_API_KEY not set - AI features will use fallback mode")
+    logger.info("ANTHROPIC_API_KEY not set")
+
+# Log AI configuration (like Agento)
+if USE_CLAUDE_CLI:
+    logger.info(f"✅ Claude CLI detected at: {CLAUDE_CLI_PATH} (using company AWS)")
+elif anthropic_client:
+    logger.info(f"✅ Anthropic API available (personal account)")
+else:
+    logger.info("ℹ️  AI features will use fallback mode")
 
 # Initialize Multi-Agent System
 agent_manager = None
 try:
     from agents import AgentManager
-    agent_manager = AgentManager(anthropic_client=anthropic_client, model_id=ANTHROPIC_MODEL)
+    # Pass both CLI path and API client
+    agent_manager = AgentManager(
+        anthropic_client=anthropic_client, 
+        model_id=ANTHROPIC_MODEL,
+        claude_cli_path=CLAUDE_CLI_PATH
+    )
     logger.info("Multi-Agent AI System initialized successfully")
 except Exception as e:
     logger.warning(f"Failed to initialize Multi-Agent System: {e}")
     agent_manager = None
+
+def call_claude_cli(prompt, model='sonnet'):
+    """
+    Call Claude via CLI (like Agento does).
+    Uses company's AWS Bedrock authentication.
+    
+    Args:
+        prompt: The prompt to send to Claude
+        model: Model name (sonnet, opus, haiku)
+        
+    Returns:
+        Claude's response text or None if failed
+    """
+    if not CLAUDE_CLI_PATH:
+        return None
+    
+    try:
+        logger.info(f"Calling Claude CLI with model: {model}")
+        
+        result = subprocess.run(
+            [CLAUDE_CLI_PATH, '--model', model, '--message', prompt],
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 minute timeout
+            check=True
+        )
+        
+        logger.info("Claude CLI completed successfully")
+        return result.stdout.strip()
+        
+    except subprocess.TimeoutExpired:
+        logger.error("Claude CLI timeout after 120s")
+        return None
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Claude CLI error: {e.stderr}")
+        return None
+    except Exception as e:
+        logger.error(f"Claude CLI unexpected error: {e}")
+        return None
+
+def call_ai(prompt, system_prompt=None):
+    """
+    Call AI with fallback priority (like Agento):
+    1. Claude CLI (company AWS)
+    2. Anthropic API (personal)
+    3. None (caller handles fallback)
+    
+    Args:
+        prompt: User prompt
+        system_prompt: Optional system prompt (only used with API)
+        
+    Returns:
+        AI response text or None
+    """
+    # Priority 1: Claude CLI (company AWS)
+    if USE_CLAUDE_CLI:
+        logger.debug("Trying Claude CLI (company AWS)...")
+        result = call_claude_cli(prompt)
+        if result:
+            return result
+        logger.warning("Claude CLI failed, trying Anthropic API...")
+    
+    # Priority 2: Anthropic API (personal)
+    if anthropic_client:
+        logger.debug("Trying Anthropic API...")
+        try:
+            message = anthropic_client.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=4096,
+                system=system_prompt if system_prompt else "You are a helpful AI assistant.",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            if message.content:
+                return message.content[0].text
+        except Exception as e:
+            logger.error(f"Anthropic API error: {e}")
+    
+    # Priority 3: None (caller must handle fallback)
+    return None
 
 def get_jira_headers():
     """Get headers for Jira API requests."""
@@ -1090,13 +1188,9 @@ def parse_ticket_content(description):
 
 def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue_type, parsed_content):
     """
-    Generate test cases using Anthropic API (Claude AI).
+    Generate test cases using AI (Claude CLI or API).
     Falls back to rule-based generation if AI is unavailable.
     """
-    if anthropic_client is None:
-        logger.warning("Anthropic client not available, falling back to rule-based generation")
-        return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
-    
     try:
         # Build the AI prompt
         prompt = build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content)
@@ -1104,26 +1198,22 @@ def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue
         # Call Claude via Anthropic API
         logger.info("Calling Claude AI for test case generation...")
         
-        message = anthropic_client.messages.create(
-            model=ANTHROPIC_MODEL,
-            max_tokens=4000,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
+        # Try AI (CLI > API > fallback)
+        ai_response = call_ai(
+            prompt=prompt,
+            system_prompt="You are an expert QA engineer specializing in test case design. Generate precise, actionable test cases in Gherkin format."
         )
         
         # Extract test cases from response
-        if message.content and len(message.content) > 0:
-            test_cases = message.content[0].text
+        if ai_response:
             logger.info("Successfully generated AI test cases")
-            return test_cases
+            return ai_response
         else:
-            logger.warning("Empty response from Claude AI")
+            logger.warning("AI unavailable, using fallback generation")
             return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
         
     except Exception as e:
-        logger.error(f"Anthropic API error: {e}")
+        logger.error(f"AI error: {e}")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
 
 def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content):

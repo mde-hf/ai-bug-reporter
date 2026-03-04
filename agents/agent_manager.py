@@ -18,26 +18,36 @@ class AgentManager:
     Handles agent initialization, selection, and coordination.
     """
     
-    def __init__(self, anthropic_client, model_id: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, anthropic_client, model_id: str = "claude-3-5-sonnet-20241022", claude_cli_path=None):
         """
         Initialize the Agent Manager.
         
         Args:
             anthropic_client: Anthropic client instance
             model_id: Claude model ID to use
+            claude_cli_path: Path to Claude CLI executable (like Agento)
         """
         self.anthropic_client = anthropic_client
         self.model_id = model_id
+        self.claude_cli_path = claude_cli_path
         
         # Initialize all agents
         self.agents = self._initialize_agents()
+        
+        # Log configuration
+        if claude_cli_path:
+            logger.info(f"Agent Manager: Using Claude CLI at {claude_cli_path}")
+        elif anthropic_client:
+            logger.info(f"Agent Manager: Using Anthropic API with {model_id}")
+        else:
+            logger.warning("Agent Manager: No AI provider available!")
         
         logger.info(f"Agent Manager initialized with {len(self.agents)} agents")
     
     def _initialize_agents(self) -> Dict[str, Any]:
         """Initialize all available agents"""
-        if not self.anthropic_client:
-            logger.warning("Anthropic client not available - agents will not function")
+        if not self.anthropic_client and not self.claude_cli_path:
+            logger.warning("No AI provider available - agents will not function")
             return {}
         
         from .bug_analyzer import BugAnalyzerAgent
@@ -46,10 +56,10 @@ class AgentManager:
         from .bug_triage import BugTriageAgent
         
         return {
-            'bug_analyzer': BugAnalyzerAgent(self.anthropic_client, self.model_id),
-            'duplicate_detective': DuplicateDetectiveAgent(self.anthropic_client, self.model_id),
-            'test_enhancer': TestCaseEnhancerAgent(self.anthropic_client, self.model_id),
-            'bug_triage': BugTriageAgent(self.anthropic_client, self.model_id)
+            'bug_analyzer': BugAnalyzerAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
+            'duplicate_detective': DuplicateDetectiveAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
+            'test_enhancer': TestCaseEnhancerAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
+            'bug_triage': BugTriageAgent(self.anthropic_client, self.model_id, self.claude_cli_path)
         }
     
     def get_agent(self, agent_name: str) -> Optional[Any]:

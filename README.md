@@ -53,11 +53,15 @@ Edit `.env` and add your credentials:
 JIRA_EMAIL=your.email@hellofresh.com
 JIRA_API_TOKEN=your_token_here
 
-# Optional: AWS Bedrock for AI Test Case Generation
-AWS_ACCESS_KEY_ID=your_aws_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret
-AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+# AI Configuration (Agento-Compatible)
+# Option 1: Claude CLI (Recommended - Uses Company AWS)
+#   - Automatically detected if installed (no config needed!)
+#   - Check: which claude
+#   - Uses your company's AWS Bedrock via SSO
+# Option 2: Personal Anthropic API
+#   - Set ANTHROPIC_API_KEY below
+# Priority: Claude CLI > Anthropic API > Rule-based fallback
+#ANTHROPIC_API_KEY=sk-ant-api...
 
 # Optional: Slack Integration
 SLACK_WEBHOOK_URL=your_webhook_url
