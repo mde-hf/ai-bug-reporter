@@ -6,7 +6,10 @@ Uses Anthropic API like Agento.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +95,7 @@ class AgentManager:
             for name, agent in self.agents.items()
         ]
     
-    def get_agent(self, agent_name: str) -> Optional[BaseAgent]:
+    def get_agent(self, agent_name: str) -> Optional['BaseAgent']:
         """
         Get a specific agent by name.
         

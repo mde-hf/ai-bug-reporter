@@ -15,8 +15,8 @@ class TestCaseEnhancerAgent(BaseAgent):
     Supports multi-turn conversations for test case refinement.
     """
     
-    def __init__(self, bedrock_client, model_id: str):
-        super().__init__(bedrock_client, model_id)
+    def __init__(self, anthropic_client, model_id: str, claude_cli_path=None):
+        super().__init__(anthropic_client, model_id, claude_cli_path)
         self.conversation_history = []
     
     def get_agent_description(self) -> str:
