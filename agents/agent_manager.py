@@ -2,18 +2,11 @@
 Agent Manager
 
 Orchestrates multiple AI agents and manages their interactions.
+Uses Anthropic API like Agento.
 """
 
 import logging
 from typing import Dict, Any, Optional, List
-import boto3
-from botocore.exceptions import ClientError
-
-from .base_agent import BaseAgent
-from .bug_analyzer import BugAnalyzerAgent
-from .duplicate_detective import DuplicateDetectiveAgent
-from .test_enhancer import TestCaseEnhancerAgent
-from .bug_triage import BugTriageAgent
 
 logger = logging.getLogger(__name__)
 
@@ -25,41 +18,67 @@ class AgentManager:
     Handles agent initialization, selection, and coordination.
     """
     
-    def __init__(self, aws_region: str, model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"):
+    def __init__(self, anthropic_client, model_id: str = "claude-3-5-sonnet-20241022"):
         """
         Initialize the Agent Manager.
         
         Args:
-            aws_region: AWS region for Bedrock
+            anthropic_client: Anthropic client instance
             model_id: Claude model ID to use
         """
-        self.aws_region = aws_region
+        self.anthropic_client = anthropic_client
         self.model_id = model_id
-        
-        # Initialize Bedrock client
-        try:
-            self.bedrock_client = boto3.client(
-                service_name='bedrock-runtime',
-                region_name=aws_region
-            )
-            logger.info(f"Bedrock client initialized in region {aws_region}")
-        except ClientError as e:
-            logger.error(f"Failed to initialize Bedrock client: {e}")
-            raise
         
         # Initialize all agents
         self.agents = self._initialize_agents()
         
         logger.info(f"Agent Manager initialized with {len(self.agents)} agents")
     
-    def _initialize_agents(self) -> Dict[str, BaseAgent]:
+    def _initialize_agents(self) -> Dict[str, Any]:
         """Initialize all available agents"""
+        if not self.anthropic_client:
+            logger.warning("Anthropic client not available - agents will not function")
+            return {}
+        
+        from .bug_analyzer import BugAnalyzerAgent
+        from .duplicate_detective import DuplicateDetectiveAgent
+        from .test_enhancer import TestCaseEnhancerAgent
+        from .bug_triage import BugTriageAgent
+        
         return {
-            'bug_analyzer': BugAnalyzerAgent(self.bedrock_client, self.model_id),
-            'duplicate_detective': DuplicateDetectiveAgent(self.bedrock_client, self.model_id),
-            'test_enhancer': TestCaseEnhancerAgent(self.bedrock_client, self.model_id),
-            'bug_triage': BugTriageAgent(self.bedrock_client, self.model_id)
+            'bug_analyzer': BugAnalyzerAgent(self.anthropic_client, self.model_id),
+            'duplicate_detective': DuplicateDetectiveAgent(self.anthropic_client, self.model_id),
+            'test_enhancer': TestCaseEnhancerAgent(self.anthropic_client, self.model_id),
+            'bug_triage': BugTriageAgent(self.anthropic_client, self.model_id)
         }
+    
+    def get_agent(self, agent_name: str) -> Optional[Any]:
+        """
+        Get a specific agent by name.
+        
+        Args:
+            agent_name: Name of the agent
+            
+        Returns:
+            Agent instance or None if not found
+        """
+        return self.agents.get(agent_name)
+    
+    def list_agents(self) -> List[Dict[str, str]]:
+        """
+        List all available agents.
+        
+        Returns:
+            List of agent information
+        """
+        return [
+            {
+                'name': name,
+                'description': agent.get_agent_description(),
+                'class': agent.__class__.__name__
+            }
+            for name, agent in self.agents.items()
+        ]
     
     def get_agent(self, agent_name: str) -> Optional[BaseAgent]:
         """

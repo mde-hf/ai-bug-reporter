@@ -20,8 +20,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
-import boto3
-from botocore.exceptions import ClientError
+import anthropic
 
 # Load environment variables
 load_dotenv()
@@ -47,9 +46,9 @@ JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
 EPIC_KEY = os.environ.get('EPIC_KEY', 'REW-323')
 PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
 
-# AWS Bedrock Configuration
-AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
-BEDROCK_MODEL_ID = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
+# Anthropic Configuration (like Agento)
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
 
 # Application Constants
 MAX_DUPLICATES_TO_RETURN = 8
@@ -59,24 +58,23 @@ HIGH_SIMILARITY_THRESHOLD = 80
 MEDIUM_SIMILARITY_THRESHOLD = 60
 LOW_SIMILARITY_THRESHOLD = 40
 
-# Initialize AWS Bedrock client
-try:
-    bedrock_runtime = boto3.client(
-        service_name='bedrock-runtime',
-        region_name=AWS_REGION,
-        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
-    )
-    logger.info(f"AWS Bedrock client initialized with model: {BEDROCK_MODEL_ID}")
-except Exception as e:
-    logger.warning(f"Failed to initialize AWS Bedrock client: {e}")
-    bedrock_runtime = None
+# Initialize Anthropic client (like Agento does)
+anthropic_client = None
+if ANTHROPIC_API_KEY:
+    try:
+        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        logger.info(f"Anthropic client initialized with model: {ANTHROPIC_MODEL}")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Anthropic client: {e}")
+        anthropic_client = None
+else:
+    logger.info("ANTHROPIC_API_KEY not set - AI features will use fallback mode")
 
 # Initialize Multi-Agent System
 agent_manager = None
 try:
     from agents import AgentManager
-    agent_manager = AgentManager(aws_region=AWS_REGION, model_id=BEDROCK_MODEL_ID)
+    agent_manager = AgentManager(anthropic_client=anthropic_client, model_id=ANTHROPIC_MODEL)
     logger.info("Multi-Agent AI System initialized successfully")
 except Exception as e:
     logger.warning(f"Failed to initialize Multi-Agent System: {e}")
@@ -1092,48 +1090,40 @@ def parse_ticket_content(description):
 
 def generate_critical_path_tests_with_ai(ticket_key, summary, description, issue_type, parsed_content):
     """
-    Generate test cases using AWS Bedrock (Claude AI).
+    Generate test cases using Anthropic API (Claude AI).
     Falls back to rule-based generation if AI is unavailable.
     """
-    if bedrock_runtime is None:
-        logger.warning("AWS Bedrock not available, falling back to rule-based generation")
+    if anthropic_client is None:
+        logger.warning("Anthropic client not available, falling back to rule-based generation")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
     
     try:
         # Build the AI prompt
         prompt = build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content)
         
-        # Call Claude via AWS Bedrock
+        # Call Claude via Anthropic API
         logger.info("Calling Claude AI for test case generation...")
         
-        request_body = {
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4000,
-            "temperature": 0.7,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        }
-        
-        response = bedrock_runtime.invoke_model(
-            modelId=BEDROCK_MODEL_ID,
-            body=json.dumps(request_body)
+        message = anthropic_client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=4000,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
         )
         
-        response_body = json.loads(response['body'].read())
-        test_cases = response_body['content'][0]['text']
+        # Extract test cases from response
+        if message.content and len(message.content) > 0:
+            test_cases = message.content[0].text
+            logger.info("Successfully generated AI test cases")
+            return test_cases
+        else:
+            logger.warning("Empty response from Claude AI")
+            return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
         
-        logger.info("Successfully generated AI test cases")
-        return test_cases
-        
-    except ClientError as e:
-        logger.error(f"AWS Bedrock error: {e}")
-        return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
     except Exception as e:
-        logger.error(f"Unexpected error in AI generation: {e}")
+        logger.error(f"Anthropic API error: {e}")
         return generate_critical_path_tests_fallback(ticket_key, summary, description, issue_type, parsed_content)
 
 def build_test_case_prompt(ticket_key, summary, description, issue_type, parsed_content):

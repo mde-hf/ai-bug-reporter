@@ -2,15 +2,13 @@
 Multi-Agent AI System for Bug Reporter
 
 This module provides specialized AI agents for intelligent bug management.
-Each agent is powered by AWS Bedrock (Claude 3.5 Sonnet).
+Each agent is powered by Anthropic API (Claude 3.5 Sonnet) - like Agento.
 """
 
 import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-import boto3
-from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +16,15 @@ logger = logging.getLogger(__name__)
 class BaseAgent(ABC):
     """Base class for all AI agents"""
     
-    def __init__(self, bedrock_client, model_id: str):
+    def __init__(self, anthropic_client, model_id: str):
         """
-        Initialize the agent with Bedrock client.
+        Initialize the agent with Anthropic client.
         
         Args:
-            bedrock_client: boto3 bedrock-runtime client
+            anthropic_client: anthropic.Anthropic client
             model_id: Claude model ID
         """
-        self.bedrock_client = bedrock_client
+        self.anthropic_client = anthropic_client
         self.model_id = model_id
         self.agent_name = self.__class__.__name__
         
@@ -62,29 +60,19 @@ class BaseAgent(ABC):
                 'prompt_length': len(full_prompt)
             })
             
-            # Invoke Claude via Bedrock
-            request_body = {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 4096,
-                "system": system_prompt,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": full_prompt
-                    }
-                ],
-                "temperature": 0.7,
-            }
-            
-            response = self.bedrock_client.invoke_model(
-                modelId=self.model_id,
-                body=json.dumps(request_body)
+            # Invoke Claude via Anthropic API
+            message = self.anthropic_client.messages.create(
+                model=self.model_id,
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{
+                    "role": "user",
+                    "content": full_prompt
+                }]
             )
             
-            response_body = json.loads(response['body'].read())
-            
             # Extract the response text
-            response_text = response_body['content'][0]['text']
+            response_text = message.content[0].text if message.content else ""
             
             logger.info(f"{self.agent_name} completed successfully")
             
@@ -92,17 +80,13 @@ class BaseAgent(ABC):
                 'success': True,
                 'agent': self.agent_name,
                 'response': response_text,
-                'usage': response_body.get('usage', {}),
+                'usage': {
+                    'input_tokens': message.usage.input_tokens,
+                    'output_tokens': message.usage.output_tokens
+                },
                 'model': self.model_id
             }
             
-        except ClientError as e:
-            logger.error(f"{self.agent_name} AWS error: {e}")
-            return {
-                'success': False,
-                'agent': self.agent_name,
-                'error': f"AWS Bedrock error: {str(e)}"
-            }
         except Exception as e:
             logger.error(f"{self.agent_name} error: {e}")
             return {
