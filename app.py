@@ -221,21 +221,15 @@ def search_duplicates(title, description):
     """
     Search for potential duplicate bugs in Jira.
     Returns list of similar issues with emphasis on title matching.
+    Uses whole phrase search for better precision.
     """
     logger.debug("===== SEARCHING FOR DUPLICATES =====")
     logger.debug(f"Title: '{title}'")
     logger.debug(f"Description: '{description}'")
     
-    # Simple direct search - search for individual words to catch partial matches
-    title_words = [w.strip() for w in title.split() if len(w.strip()) > 2]
-    
-    if not title_words:
-        # If title is too short or only has short words, search as-is
-        simple_jql = f'project = {PROJECT_KEY} AND type = Bug AND summary ~ "{title}" ORDER BY created DESC'
-    else:
-        # Build JQL to search for any of the meaningful words in the title
-        word_queries = ' OR '.join([f'summary ~ "{word}"' for word in title_words])
-        simple_jql = f'project = {PROJECT_KEY} AND type = Bug AND ({word_queries}) ORDER BY created DESC'
+    # Search for the whole title phrase first (more precise)
+    # JIRA's ~ operator does fuzzy matching on the phrase
+    simple_jql = f'project = {PROJECT_KEY} AND type = Bug AND summary ~ "{title}" ORDER BY created DESC'
     
     logger.debug(f"JQL Query: {simple_jql}")
     sys.stdout.flush()
