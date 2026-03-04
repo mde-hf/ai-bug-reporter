@@ -54,12 +54,14 @@ class AgentManager:
         from .duplicate_detective import DuplicateDetectiveAgent
         from .test_enhancer import TestCaseEnhancerAgent
         from .bug_triage import BugTriageAgent
+        from .qa_analyzer import QAAnalyzerAgent
         
         return {
             'bug_analyzer': BugAnalyzerAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
             'duplicate_detective': DuplicateDetectiveAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
             'test_enhancer': TestCaseEnhancerAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
-            'bug_triage': BugTriageAgent(self.anthropic_client, self.model_id, self.claude_cli_path)
+            'bug_triage': BugTriageAgent(self.anthropic_client, self.model_id, self.claude_cli_path),
+            'qa_analyzer': QAAnalyzerAgent(self.anthropic_client, self.model_id, self.claude_cli_path)
         }
     
     def get_agent(self, agent_name: str) -> Optional[Any]:

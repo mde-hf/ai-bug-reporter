@@ -73,6 +73,9 @@ PROJECT_KEY = os.environ.get('PROJECT_KEY', 'REW')
 # Slack Configuration
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
 
+# GitHub Configuration
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
+
 # Anthropic Configuration (like Agento)
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
 ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
@@ -1991,6 +1994,165 @@ def smart_bug_workflow():
         return jsonify({
             'success': False,
             'error': str(e)
+        }), 500
+
+# ═══════════════════════════════════════════════════════════════
+# GITHUB QA ANALYSIS ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/api/analyze-github', methods=['POST'])
+def analyze_github():
+    """
+    Analyze a GitHub PR or repository from QA perspective.
+    
+    Expects:
+        {
+            "url": "https://github.com/org/repo/pull/123",
+            "type": "pr" | "repo"
+        }
+    """
+    if not agent_manager:
+        return jsonify({
+            'success': False,
+            'error': 'Multi-Agent system not initialized'
+        }), 503
+    
+    if not GITHUB_TOKEN:
+        return jsonify({
+            'success': False,
+            'error': 'GitHub token not configured. Add GITHUB_TOKEN to .env file.'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        github_url = data.get('url', '')
+        analysis_type = data.get('type', 'pr')
+        
+        if not github_url:
+            return jsonify({'error': 'GitHub URL is required'}), 400
+        
+        # Parse GitHub URL
+        # Formats: 
+        # - https://github.com/org/repo/pull/123
+        # - https://github.com/org/repo
+        import re
+        
+        pr_match = re.match(r'https://github\.com/([^/]+)/([^/]+)/pull/(\d+)', github_url)
+        repo_match = re.match(r'https://github\.com/([^/]+)/([^/]+)', github_url)
+        
+        if pr_match:
+            owner, repo, pr_number = pr_match.groups()
+            logger.info(f"Analyzing PR: {owner}/{repo}#{pr_number}")
+            
+            # Fetch PR data using GitHub API
+            try:
+                from github import Github
+                g = Github(GITHUB_TOKEN)
+                repository = g.get_repo(f"{owner}/{repo}")
+                pull_request = repository.get_pull(int(pr_number))
+                
+                # Get PR files and changes
+                files = pull_request.get_files()
+                changed_files = []
+                
+                for file in list(files)[:20]:  # Limit to 20 files
+                    changed_files.append({
+                        'filename': file.filename,
+                        'status': file.status,
+                        'additions': file.additions,
+                        'deletions': file.deletions,
+                        'changes': file.changes,
+                        'patch': file.patch[:1000] if file.patch else ''  # First 1000 chars
+                    })
+                
+                pr_data = {
+                    'title': pull_request.title,
+                    'description': pull_request.body or 'No description provided',
+                    'changed_files': changed_files,
+                    'total_files_changed': pull_request.changed_files,
+                    'total_additions': pull_request.additions,
+                    'total_deletions': pull_request.deletions,
+                    'state': pull_request.state,
+                    'mergeable': pull_request.mergeable,
+                    'url': github_url
+                }
+                
+                # Get QA Analyzer agent
+                qa_agent = agent_manager.get_agent('qa_analyzer')
+                if not qa_agent:
+                    return jsonify({
+                        'success': False,
+                        'error': 'QA Analyzer agent not available'
+                    }), 503
+                
+                # Analyze PR
+                logger.info("Running AI QA analysis...")
+                analysis_result = qa_agent.analyze_pr(pr_data)
+                
+                if analysis_result.get('success'):
+                    ai_response = analysis_result.get('response', '')
+                    
+                    # Try to extract JSON from response
+                    json_match = re.search(r'```json\s*(.*?)\s*```', ai_response, re.DOTALL)
+                    if json_match:
+                        try:
+                            analysis_data = json.loads(json_match.group(1))
+                        except json.JSONDecodeError:
+                            # Fallback: return raw text
+                            analysis_data = {
+                                'raw_analysis': ai_response,
+                                'coverage_score': 'N/A',
+                                'risk_level': 'Unknown'
+                            }
+                    else:
+                        analysis_data = {
+                            'raw_analysis': ai_response,
+                            'coverage_score': 'N/A',
+                            'risk_level': 'Unknown'
+                        }
+                    
+                    return jsonify({
+                        'success': True,
+                        'analysis': analysis_data,
+                        'pr_info': {
+                            'title': pr_data['title'],
+                            'files_changed': pr_data['total_files_changed'],
+                            'additions': pr_data['total_additions'],
+                            'deletions': pr_data['total_deletions'],
+                            'url': github_url
+                        },
+                        'method': analysis_result.get('provider', 'unknown')
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': f"AI analysis failed: {analysis_result.get('error', 'Unknown error')}"
+                    }), 500
+                    
+            except Exception as gh_error:
+                logger.error(f"GitHub API error: {gh_error}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Failed to fetch PR data: {str(gh_error)}'
+                }), 500
+                
+        elif repo_match:
+            return jsonify({
+                'success': False,
+                'error': 'Repository analysis not yet implemented. Please provide a PR URL.'
+            }), 400
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid GitHub URL. Expected format: https://github.com/owner/repo/pull/123'
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"Error in GitHub analysis: {e}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Analysis failed: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

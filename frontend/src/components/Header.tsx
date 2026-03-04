@@ -19,6 +19,9 @@ export default function Header() {
           <NavLink to="/test-cases" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             AI Test Cases
           </NavLink>
+          <NavLink to="/qa-analysis" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            QA Analysis
+          </NavLink>
         </nav>
       </div>
     </header>

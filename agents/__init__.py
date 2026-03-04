@@ -9,6 +9,7 @@ from .bug_analyzer import BugAnalyzerAgent
 from .duplicate_detective import DuplicateDetectiveAgent
 from .test_enhancer import TestCaseEnhancerAgent
 from .bug_triage import BugTriageAgent
+from .qa_analyzer import QAAnalyzerAgent
 from .agent_manager import AgentManager
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     'DuplicateDetectiveAgent',
     'TestCaseEnhancerAgent',
     'BugTriageAgent',
+    'QAAnalyzerAgent',
     'AgentManager'
 ]
 
