@@ -221,8 +221,21 @@ function QAAnalysis() {
 
       {loading && (
         <div className="qa-loading">
-          <div className="qa-spinner"></div>
-          <p>Analyzing pull request... This may take 30-60 seconds.</p>
+          <div className="qa-progress-container">
+            <div className="qa-progress-header">
+              <span className="qa-progress-status">{progressStatus}</span>
+              <span className="qa-progress-percentage">{progress}%</span>
+            </div>
+            <div className="qa-progress-bar">
+              <div 
+                className="qa-progress-fill" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <p className="qa-progress-hint">
+              This may take 30-60 seconds. AI is analyzing your PR...
+            </p>
+          </div>
         </div>
       )}
 
@@ -257,10 +270,54 @@ function QAAnalysis() {
             </a>
           </div>
 
-          {analysis.raw_analysis ? (
-            <div className="qa-raw-analysis">
+          {analysis.raw_analysis && !analysis.test_breakdown ? (
+            <div className="qa-section">
               <h2>AI Analysis</h2>
-              <pre className="qa-raw-text">{analysis.raw_analysis}</pre>
+              <div className="qa-formatted-text">
+                {analysis.raw_analysis.split('\n').map((line, index) => {
+                  // Check if line is a heading
+                  if (line.match(/^#+\s/)) {
+                    const level = line.match(/^(#+)/)?.[0].length || 2;
+                    const text = line.replace(/^#+\s/, '');
+                    return <div key={index} className={`qa-heading-${level}`}>{text}</div>;
+                  }
+                  // Check if line is a bullet point
+                  if (line.match(/^[\-\*]\s/)) {
+                    const text = line.replace(/^[\-\*]\s/, '');
+                    return (
+                      <div key={index} className="qa-bullet-item">
+                        <span className="qa-bullet">•</span>
+                        {text}
+                      </div>
+                    );
+                  }
+                  // Check if line is numbered
+                  if (line.match(/^\d+\.\s/)) {
+                    return <div key={index} className="qa-numbered-item">{line}</div>;
+                  }
+                  // Bold text
+                  if (line.match(/\*\*(.*?)\*\*/)) {
+                    const parts = line.split(/(\*\*.*?\*\*)/);
+                    return (
+                      <p key={index} className="qa-text-line">
+                        {parts.map((part, i) => 
+                          part.match(/\*\*(.*?)\*\*/) ? (
+                            <strong key={i}>{part.replace(/\*\*/g, '')}</strong>
+                          ) : (
+                            <span key={i}>{part}</span>
+                          )
+                        )}
+                      </p>
+                    );
+                  }
+                  // Regular text
+                  if (line.trim()) {
+                    return <p key={index} className="qa-text-line">{line}</p>;
+                  }
+                  // Empty line
+                  return <div key={index} className="qa-spacer"></div>;
+                })}
+              </div>
             </div>
           ) : (
             <>

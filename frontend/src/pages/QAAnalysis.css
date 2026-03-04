@@ -86,21 +86,83 @@
 .qa-loading {
   text-align: center;
   padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.qa-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #57a635;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: qa-spin 1s linear infinite;
-  margin: 0 auto 1rem;
+.qa-progress-container {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-@keyframes qa-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.qa-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.qa-progress-status {
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.qa-progress-percentage {
+  color: #57a635;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.qa-progress-bar {
+  width: 100%;
+  height: 24px;
+  background-color: #f3f3f3;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.qa-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #57a635 0%, #6bc144 100%);
+  border-radius: 12px;
+  transition: width 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.qa-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: qa-shimmer 2s infinite;
+}
+
+@keyframes qa-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.qa-progress-hint {
+  margin-top: 1rem;
+  color: #666;
+  font-size: 0.875rem;
 }
 
 .qa-results {
@@ -378,6 +440,67 @@
   font-size: 0.875rem;
   line-height: 1.6;
   overflow-x: auto;
+}
+
+.qa-formatted-text {
+  color: #333;
+  line-height: 1.8;
+}
+
+.qa-heading-2,
+.qa-heading-3,
+.qa-heading-4 {
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+.qa-heading-2 {
+  font-size: 1.5rem;
+  border-bottom: 2px solid #57a635;
+  padding-bottom: 0.5rem;
+}
+
+.qa-heading-3 {
+  font-size: 1.25rem;
+  color: #57a635;
+}
+
+.qa-heading-4 {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.qa-bullet-item {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.5rem 1rem;
+  align-items: flex-start;
+}
+
+.qa-bullet {
+  color: #57a635;
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.qa-numbered-item {
+  margin: 0.5rem 0 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.qa-text-line {
+  margin: 0.75rem 0;
+}
+
+.qa-text-line strong {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.qa-spacer {
+  height: 0.75rem;
 }
 
 .qa-test-breakdown {
