@@ -626,17 +626,24 @@ def get_epic_stats():
         if stats['closed_count'] > 0:
             stats['avg_resolution_days'] = round(stats['total_resolved_days'] / stats['closed_count'], 1)
         
+        # Convert creation_trend from dict to array sorted by date
+        creation_trend_array = [
+            {'date': date, 'count': count}
+            for date, count in sorted(stats['creation_trend'].items())
+        ]
+        
         # Convert defaultdicts to regular dicts for JSON
         return jsonify({
             'total_count': stats['total_count'],
             'open_count': stats['open_count'],
+            'resolved_count': stats['closed_count'],  # Frontend expects 'resolved_count'
             'closed_count': stats['closed_count'],
             'avg_resolution_days': stats['avg_resolution_days'],
             'by_status': dict(stats['by_status']),
             'by_priority': dict(stats['by_priority']),
             'by_platform': dict(stats['by_platform']),
-            'priority_status_matrix': {k: dict(v) for k, v in stats['priority_status_matrix'].items()},
-            'creation_trend': dict(stats['creation_trend']),
+            'priority_matrix': {k: dict(v) for k, v in stats['priority_status_matrix'].items()},  # Frontend expects 'priority_matrix'
+            'creation_trend': creation_trend_array,  # Array format for frontend
             'resolution_trend': dict(stats['resolution_trend'])
         })
         
