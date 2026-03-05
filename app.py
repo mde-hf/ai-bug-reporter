@@ -2205,13 +2205,18 @@ def get_user_journey():
         # Clean column names
         df.columns = df.columns.str.strip()
         
+        # Rename the unnamed column to Android (from the header row)
+        df = df.rename(columns={'Unnamed: 6': 'Android'})
+        df = df.rename(columns={'Status': 'WEB', 'Functionality': 'iOS'})
+        
         # Process the data into structured format
         journey_sections = []
         current_section = None
         current_scenarios = []
+        test_case_id = 1
         
         for index, row in df.iterrows():
-            # Skip header row
+            # Skip first row (platform headers)
             if index == 0:
                 continue
             
@@ -2219,7 +2224,10 @@ def get_user_journey():
             customer_status = row['Customer status']
             current_step = row['Current step of the User']
             expected = row['Expected behaviour']
-            status = row['Status']
+            web_status = row['WEB']
+            ios_status = row['iOS']
+            android_status = row['Android']
+            jira_links = row['Jira links for defects']
             
             # Check if this is a new journey section
             if pd.notna(journey_step) and journey_step not in ['', 'NaN']:
@@ -2237,15 +2245,23 @@ def get_user_journey():
             # Add scenario to current section
             elif pd.notna(expected) or pd.notna(customer_status) or pd.notna(current_step):
                 scenario = {
+                    'id': f'TC-{test_case_id:03d}',
                     'given': str(customer_status) if pd.notna(customer_status) else None,
                     'when': str(current_step) if pd.notna(current_step) else None,
                     'then': str(expected) if pd.notna(expected) else None,
-                    'status': str(status) if pd.notna(status) else None
+                    'platforms': {
+                        'web': str(web_status) if pd.notna(web_status) and str(web_status) not in ['nan', 'NaN', ''] else 'Not tested',
+                        'ios': str(ios_status) if pd.notna(ios_status) and str(ios_status) not in ['nan', 'NaN', ''] else 'Not tested',
+                        'android': str(android_status) if pd.notna(android_status) and str(android_status) not in ['nan', 'NaN', ''] else 'Not tested'
+                    },
+                    'jira_link': str(jira_links) if pd.notna(jira_links) else None,
+                    'test_status': 'Not Started'  # Default status
                 }
                 
                 # Only add if at least one field has content
                 if scenario['given'] or scenario['when'] or scenario['then']:
                     current_scenarios.append(scenario)
+                    test_case_id += 1
         
         # Add last section
         if current_section and current_scenarios:
@@ -2254,12 +2270,24 @@ def get_user_journey():
                 'scenarios': current_scenarios
             })
         
+        # Calculate statistics
+        total_tests = sum(len(section['scenarios']) for section in journey_sections)
+        stats = {
+            'total': total_tests,
+            'not_started': total_tests,  # Default all to not started
+            'in_progress': 0,
+            'passed': 0,
+            'failed': 0,
+            'blocked': 0
+        }
+        
         return jsonify({
             'success': True,
             'data': {
                 'title': 'Loyalty 2.0 - Friends & Family',
-                'subtitle': 'User Journey & Test Cases',
-                'sections': journey_sections
+                'subtitle': 'Test Case Tracker',
+                'sections': journey_sections,
+                'statistics': stats
             }
         })
         

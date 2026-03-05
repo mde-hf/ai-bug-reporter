@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './UserJourney.css';
 
+interface PlatformStatus {
+  web: string;
+  ios: string;
+  android: string;
+}
+
 interface Scenario {
+  id: string;
   given: string | null;
   when: string | null;
   then: string | null;
-  status: string | null;
+  platforms: PlatformStatus;
+  jira_link: string | null;
+  test_status: string;
 }
 
 interface JourneySection {
@@ -14,10 +23,20 @@ interface JourneySection {
   scenarios: Scenario[];
 }
 
+interface Statistics {
+  total: number;
+  not_started: number;
+  in_progress: number;
+  passed: number;
+  failed: number;
+  blocked: number;
+}
+
 interface JourneyData {
   title: string;
   subtitle: string;
   sections: JourneySection[];
+  statistics: Statistics;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -27,6 +46,7 @@ function UserJourney() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<JourneyData | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0]));
+  const [testStatuses, setTestStatuses] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     loadJourneyData();
@@ -67,6 +87,54 @@ function UserJourney() {
   const collapseAll = () => {
     setExpandedSections(new Set());
   };
+
+  const updateTestStatus = (testId: string, status: string) => {
+    setTestStatuses((prev) => ({
+      ...prev,
+      [testId]: status,
+    }));
+  };
+
+  const getPlatformStatusClass = (status: string): string => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('pass')) return 'platform-pass';
+    if (lowerStatus.includes('fail')) return 'platform-fail';
+    if (lowerStatus.includes('block')) return 'platform-blocked';
+    if (lowerStatus.includes('progress') || lowerStatus.includes('testing')) return 'platform-progress';
+    return 'platform-not-tested';
+  };
+
+  const getTestStatusClass = (status: string): string => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('pass')) return 'status-passed';
+    if (lowerStatus.includes('fail')) return 'status-failed';
+    if (lowerStatus.includes('block')) return 'status-blocked';
+    if (lowerStatus.includes('progress')) return 'status-in-progress';
+    return 'status-not-started';
+  };
+
+  const calculateStatistics = (): Statistics => {
+    if (!data) return { total: 0, not_started: 0, in_progress: 0, passed: 0, failed: 0, blocked: 0 };
+    
+    const stats = { total: 0, not_started: 0, in_progress: 0, passed: 0, failed: 0, blocked: 0 };
+    
+    data.sections.forEach((section) => {
+      section.scenarios.forEach((scenario) => {
+        stats.total++;
+        const status = (testStatuses[scenario.id] || scenario.test_status).toLowerCase();
+        
+        if (status.includes('pass')) stats.passed++;
+        else if (status.includes('fail')) stats.failed++;
+        else if (status.includes('block')) stats.blocked++;
+        else if (status.includes('progress')) stats.in_progress++;
+        else stats.not_started++;
+      });
+    });
+    
+    return stats;
+  };
+
+  const statistics = calculateStatistics();
 
   if (loading) {
     return (
@@ -109,6 +177,49 @@ function UserJourney() {
         </div>
       </div>
 
+      {/* Statistics Dashboard */}
+      <div className="statistics-dashboard">
+        <div className="stat-card stat-total">
+          <div className="stat-number">{statistics.total}</div>
+          <div className="stat-label">Total Test Cases</div>
+        </div>
+        <div className="stat-card stat-passed">
+          <div className="stat-number">{statistics.passed}</div>
+          <div className="stat-label">Passed</div>
+          <div className="stat-percentage">
+            {statistics.total > 0 ? Math.round((statistics.passed / statistics.total) * 100) : 0}%
+          </div>
+        </div>
+        <div className="stat-card stat-failed">
+          <div className="stat-number">{statistics.failed}</div>
+          <div className="stat-label">Failed</div>
+          <div className="stat-percentage">
+            {statistics.total > 0 ? Math.round((statistics.failed / statistics.total) * 100) : 0}%
+          </div>
+        </div>
+        <div className="stat-card stat-in-progress">
+          <div className="stat-number">{statistics.in_progress}</div>
+          <div className="stat-label">In Progress</div>
+          <div className="stat-percentage">
+            {statistics.total > 0 ? Math.round((statistics.in_progress / statistics.total) * 100) : 0}%
+          </div>
+        </div>
+        <div className="stat-card stat-blocked">
+          <div className="stat-number">{statistics.blocked}</div>
+          <div className="stat-label">Blocked</div>
+          <div className="stat-percentage">
+            {statistics.total > 0 ? Math.round((statistics.blocked / statistics.total) * 100) : 0}%
+          </div>
+        </div>
+        <div className="stat-card stat-not-started">
+          <div className="stat-number">{statistics.not_started}</div>
+          <div className="stat-label">Not Started</div>
+          <div className="stat-percentage">
+            {statistics.total > 0 ? Math.round((statistics.not_started / statistics.total) * 100) : 0}%
+          </div>
+        </div>
+      </div>
+
       <div className="user-journey-sections">
         {data.sections.map((section, sectionIndex) => (
           <div key={sectionIndex} className="journey-section">
@@ -130,6 +241,36 @@ function UserJourney() {
               <div className="journey-scenarios">
                 {section.scenarios.map((scenario, scenarioIndex) => (
                   <div key={scenarioIndex} className="scenario-card">
+                    <div className="scenario-header-row">
+                      <span className="test-case-id">{scenario.id}</span>
+                      
+                      {/* Platform Status Badges */}
+                      <div className="platform-badges">
+                        <span className={`platform-badge ${getPlatformStatusClass(scenario.platforms.web)}`}>
+                          WEB: {scenario.platforms.web}
+                        </span>
+                        <span className={`platform-badge ${getPlatformStatusClass(scenario.platforms.ios)}`}>
+                          iOS: {scenario.platforms.ios}
+                        </span>
+                        <span className={`platform-badge ${getPlatformStatusClass(scenario.platforms.android)}`}>
+                          Android: {scenario.platforms.android}
+                        </span>
+                      </div>
+
+                      {/* Test Status Dropdown */}
+                      <select
+                        className={`test-status-select ${getTestStatusClass(testStatuses[scenario.id] || scenario.test_status)}`}
+                        value={testStatuses[scenario.id] || scenario.test_status}
+                        onChange={(e) => updateTestStatus(scenario.id, e.target.value)}
+                      >
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Passed">Passed</option>
+                        <option value="Failed">Failed</option>
+                        <option value="Blocked">Blocked</option>
+                      </select>
+                    </div>
+
                     {scenario.given && (
                       <div className="scenario-block given-block">
                         <span className="scenario-label">GIVEN</span>
@@ -150,10 +291,12 @@ function UserJourney() {
                         <p className="scenario-text">{scenario.then}</p>
                       </div>
                     )}
-                    
-                    {scenario.status && scenario.status !== 'null' && scenario.status !== 'nan' && (
-                      <div className="scenario-status">
-                        <span className="status-badge">{scenario.status}</span>
+
+                    {scenario.jira_link && scenario.jira_link !== 'null' && scenario.jira_link !== 'nan' && (
+                      <div className="scenario-jira-link">
+                        <a href={scenario.jira_link} target="_blank" rel="noopener noreferrer">
+                          View Defect in JIRA
+                        </a>
                       </div>
                     )}
                   </div>
