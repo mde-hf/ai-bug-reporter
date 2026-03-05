@@ -2175,6 +2175,102 @@ def analyze_github():
             'error': f'Analysis failed: {str(e)}'
         }), 500
 
+# ═══════════════════════════════════════════════════════════════
+# USER JOURNEY / USE CASE ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/api/user-journey', methods=['GET'])
+def get_user_journey():
+    """
+    Load and serve the Loyalty 2.0 user journey/use case data from Excel.
+    
+    Returns structured test cases organized by journey steps.
+    """
+    try:
+        import pandas as pd
+        import os
+        
+        # Path to the Excel file
+        excel_path = '/Users/mde/Downloads/Loyalty 2.0 - Friends & Family.xlsx'
+        
+        if not os.path.exists(excel_path):
+            return jsonify({
+                'success': False,
+                'error': 'Excel file not found'
+            }), 404
+        
+        # Read the master use case sheet
+        df = pd.read_excel(excel_path, sheet_name='DO NOT EDIT - Loyalty 2.0_MASTE')
+        
+        # Clean column names
+        df.columns = df.columns.str.strip()
+        
+        # Process the data into structured format
+        journey_sections = []
+        current_section = None
+        current_scenarios = []
+        
+        for index, row in df.iterrows():
+            # Skip header row
+            if index == 0:
+                continue
+            
+            journey_step = row['Journey Step']
+            customer_status = row['Customer status']
+            current_step = row['Current step of the User']
+            expected = row['Expected behaviour']
+            status = row['Status']
+            
+            # Check if this is a new journey section
+            if pd.notna(journey_step) and journey_step not in ['', 'NaN']:
+                # Save previous section if exists
+                if current_section:
+                    journey_sections.append({
+                        'title': current_section,
+                        'scenarios': current_scenarios
+                    })
+                
+                # Start new section
+                current_section = journey_step
+                current_scenarios = []
+            
+            # Add scenario to current section
+            elif pd.notna(expected) or pd.notna(customer_status) or pd.notna(current_step):
+                scenario = {
+                    'given': str(customer_status) if pd.notna(customer_status) else None,
+                    'when': str(current_step) if pd.notna(current_step) else None,
+                    'then': str(expected) if pd.notna(expected) else None,
+                    'status': str(status) if pd.notna(status) else None
+                }
+                
+                # Only add if at least one field has content
+                if scenario['given'] or scenario['when'] or scenario['then']:
+                    current_scenarios.append(scenario)
+        
+        # Add last section
+        if current_section and current_scenarios:
+            journey_sections.append({
+                'title': current_section,
+                'scenarios': current_scenarios
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'title': 'Loyalty 2.0 - Friends & Family',
+                'subtitle': 'User Journey & Test Cases',
+                'sections': journey_sections
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading user journey data: {e}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to load user journey data: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     # Check for required environment variables
     if not JIRA_EMAIL or not JIRA_API_TOKEN:

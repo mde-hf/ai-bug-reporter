@@ -1,0 +1,592 @@
+[
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": "WEB",
+    "Functionality": "iOS",
+    "Unnamed: 6": "Android",
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": "Entry Point",
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am user who is not a user of any existing Loyalty programs/challenges and is aprt of the experiment",
+    "Current step of the User": "[Apps] I go to Profile page and tap on the Rewards section\n\n[Web] I click on the REWARDS icon on the Header",
+    "Expected behaviour": "I should see the Loyalty 2.0 dashboard/page",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should see the Loyalty 2.0 dashboard/page",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a new user who just joined the Loyalty 2.0 program",
+    "Current step of the User": "Given I am inside the Rewards page",
+    "Expected behaviour": "I should see the total points as 0",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see an empty ACTIVE REWARDS section ",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "If I have other vouchers not related to Loyalty, I should not see them in the Rewards page but should see them in the Benefits page",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see a EXPLORE ALL REWARDS section with a VIEW ALL option",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for the reward cards in the EXPLORE ALL REWARDS section should be greyed out",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a user with X amount of points with no redeemed rewards",
+    "Current step of the User": "Given I am inside the Rewards page",
+    "Expected behaviour": "I should be able to see the total points ",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see an empty ACTIVE REWARDS section ",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see a EXPLORE ALL REWARDS section with a VIEW ALL option",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for the reward cards in the EXPLORE ALL REWARDS section should be activated based on my points",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a user with X amount of points with Y redeemed rewards",
+    "Current step of the User": "Given I am inside the Rewards page",
+    "Expected behaviour": "I should be able to see the total points ",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see an ACTIVE REWARDS section with the voucher that was purchased",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see a EXPLORE ALL REWARDS section with a VIEW ALL option",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for the reward cards in the EXPLORE ALL REWARDS section should be activated based on my points",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": "Points calculation",
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am user with 0 points",
+    "Current step of the User": "Given I joined the program and an order is processed successfully AND I visit the REWARDS page",
+    "Expected behaviour": "I should see my points earned",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The point should be calculated based on unit of currency spent ( Taxes and HelloCash doesn't count)",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "For F&F launch, points is calculated as = Money spent x 70 (rounded)",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "If i redeem my points for a REWARD, then I should see the TOTAL REDEEMED points accordingly",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": "Redeeming rewards and redirection",
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a user with X amount of points with no redeemed rewards",
+    "Current step of the User": "Given I am inside the Rewards page",
+    "Expected behaviour": "When I tap/click on VIEW ALL in EXPLORE ALL REWARDS section -> redirect to the REWARDS STORE page",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for eligible rewards for redemption should be highlighted",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "Tapping on a REWARD should display the Reward info dialogue box with information about the Reward ",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "[Apps] Tapping on a REWARD should display the Reward info dialogue box with information about the Reward and a carousel of the options available in that Category",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The REWARD INFO dialogue box should have two CTAs - CANCEL & REDEEM for X POINTS",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "Tapping on REDEEM should immediately deduct the deduction in points",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "AND, redirect me to the respective category (Add-ons,Premium,main category for meal/shipping vouchers)",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "In the redirected page, I should see the  Add-on/Premium voucher banner on top of the category that I'm redirected to",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "For meal box and free shipping, I should see the benefit carousel in the main category",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should now be able to see the voucher I redeemed in the ACTIVE REWARDS section",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "When I have more than 3 rewards, I should see a chevron to navigate through the collected vouchers",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "In the ACTIVE REWARDS section, the voucher should be arranged based on the attachment date (older appear first)",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The ACTIVE REWARDS section should display only the voucher accumulated via Loyalty 2.0",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for a Meal voucher in the ACTIVE REWARDS section should be \"APPLIED\"",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for a Shipping voucher in the ACTIVE REWARDS section should be \"APPLIED\"",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for a Add-on voucher in the ACTIVE REWARDS section should be \"SELECT\"",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "The CTA for a Surcharge voucher in the ACTIVE REWARDS section should be \"SELECT\"",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "In the REWARD INFO dialogue box, tapping on CANCEL should close the dialogue and not deduct points or redeem the reward",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a user with X amount of points with existing redeemed rewards",
+    "Current step of the User": "Given I am inside the Rewards page",
+    "Expected behaviour": "I should see the existing active rewards in the ACTIVE REWARDS section",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to redeem any rewards from the REWARDS STORE based on my points",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to redeem the same kind of reward that I already have",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "My points should be deducted based on my Reward redemption",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "I should be able to see the newly redeemed reward in my ACTIVE REWARDS section",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a paused user with valid points",
+    "Current step of the User": "Given I redeem a reward",
+    "Expected behaviour": "I should be redirected to the Reward category of the upcoming editable week that is skipped",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am a user with X amount of points \n\n\n",
+    "Current step of the User": "Given I try to redeem a reward which requires higher points than I have",
+    "Expected behaviour": "[Web] When I tap/Click on the Reward card, it should show the details of the reward, but also with an info that I do not posses enough points to redeem it.",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "[Web] The CTA to redeem the reward in the Reward pop-up should be disabled",
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": "Error and Loading states",
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": NaN,
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": "Given I am User facing error or loading states",
+    "Current step of the User": "Loading states",
+    "Expected behaviour": "Loading state while redeeming a reward",
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "Loading state when loading Rewards page",
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": "Error states",
+    "Expected behaviour": "Error screen for Rewards store ",
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "Error screen for failed redemption",
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": "Error screen for Loyaty Dashboard page",
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  },
+  {
+    "Journey Step": NaN,
+    "Customer status": NaN,
+    "Current step of the User": NaN,
+    "Expected behaviour": NaN,
+    "Status": "Not started ",
+    "Functionality": NaN,
+    "Unnamed: 6": NaN,
+    "Jira links for defects": NaN
+  }
+]
